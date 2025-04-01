@@ -1,0 +1,119 @@
+﻿@model TickTockTrends_MVC.DTO.RegisterUserDTO
+@{
+    ViewData["Title"] = "Register";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Register</h2>
+
+<div class="card p-4">
+    <form id="registerForm">
+        @Html.AntiForgeryToken()
+
+        <!-- Name, Password, PhoneNo fields -->
+        <div class="form-group">
+            <label asp-for="Name"></label>
+            <input asp-for="Name" id="name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Password"></label>
+            <input asp-for="Password" id="password" type="password" class="form-control" />
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="PhoneNo"></label>
+            <input asp-for="PhoneNo" id="phoneNo" class="form-control" />
+            <span asp-validation-for="PhoneNo" class="text-danger"></span>
+        </div>
+
+        <!-- Email and Send OTP Button -->
+        <div class="form-group">
+            <label asp-for="Email"></label>
+            <input asp-for="Email" id="email" class="form-control" />
+            <button type="button" class="btn btn-secondary mt-2" onclick="sendOtp()">Send OTP</button>
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <!-- OTP Verification -->
+        <div class="form-group">
+            <label for="otp">Enter OTP</label>
+            <input type="text" id="otp" class="form-control" />
+            <span class="text-danger" id="otpError"></span>
+        </div>
+
+        <!-- Final Registration Button -->
+        <button type="button" class="btn btn-primary mt-3" onclick="verifyAndRegister()">Register</button>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        const apiUrl = "https://localhost:7026/api/Users";
+
+        // Send OTP to the email entered
+        async function sendOtp() {
+            let email = document.getElementById("email").value;
+            if (!email) {
+                alert("Please enter an email first.");
+                return;
+            }
+
+            let response = await fetch(`${apiUrl}/SendOTP`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email })
+            });
+
+            let result = await response.json();
+            if (result.success) {
+                alert("OTP sent successfully!");
+            } else {
+                alert("Failed to send OTP.");
+            }
+        }
+
+        // Verify OTP and proceed with registration
+        async function verifyAndRegister() {
+            let email = document.getElementById("email").value;
+            let otp = document.getElementById("otp").value;
+            let name = document.getElementById("name").value;
+            let password = document.getElementById("password").value;
+            let phoneNo = document.getElementById("phoneNo").value;
+
+            if (!otp) {
+                document.getElementById("otpError").innerText = "Please enter OTP.";
+                return;
+            }
+
+            let otpResponse = await fetch(`${apiUrl}/VerifyOTP`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, otp })
+            });
+
+            let otpResult = await otpResponse.json();
+            if (!otpResult.success) {
+                document.getElementById("otpError").innerText = otpResult.message;
+                return;
+            }
+
+            // Proceed to register the user if OTP is correct
+            let registerResponse = await fetch(`${apiUrl}/Register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, email, password, phoneNo })
+            });
+
+            let registerResult = await registerResponse.json();
+            if (registerResult.success) {
+                alert("Registration successful!");
+                window.location.href = "/Users/Login";
+            } else {
+                alert("Registration failed: " + registerResult.message);
+            }
+        }
+    </script>
+}

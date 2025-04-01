@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35707.178
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TickTockTrends_WEBAPI", "TickTockTrends_WEBAPI\TickTockTrends_WEBAPI.csproj", "{8CD64D93-0EE3-4D40-9CED-79EBF9CD1780}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TickTockTrends_MVC", "TickTockTrends_MVC\TickTockTrends_MVC.csproj", "{77FFF4F4-B12D-47CD-8CA0-794089896E3D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8CD64D93-0EE3-4D40-9CED-79EBF9CD1780}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CD64D93-0EE3-4D40-9CED-79EBF9CD1780}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CD64D93-0EE3-4D40-9CED-79EBF9CD1780}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CD64D93-0EE3-4D40-9CED-79EBF9CD1780}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77FFF4F4-B12D-47CD-8CA0-794089896E3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77FFF4F4-B12D-47CD-8CA0-794089896E3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77FFF4F4-B12D-47CD-8CA0-794089896E3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77FFF4F4-B12D-47CD-8CA0-794089896E3D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
