@@ -30,22 +30,7 @@ namespace TickTockTrends_WEBAPI.Controllers
             _configuration = configuration;
         }
 
-        //GET: api/Users
-        //[HttpGet]
-        //public async Task<ActionResult<IEnumerable<RegisterUserDTO>>> GetUsers()
-        //{
-        //    var users = await _context.Users
-        //        .Select(u => new RegisterUserDTO
-        //        {
-        //            Name = u.Name,
-        //            Email = u.Email,
-        //            PhoneNo = u.PhoneNo
-        //        })
-        //        .ToListAsync();
-
-        //    return Ok(users);
-        //}
-
+      
 
 
         //GET: api/Users
@@ -55,6 +40,7 @@ namespace TickTockTrends_WEBAPI.Controllers
             var users = await _context.Users
                 .Select(u => new
                 {
+                    UserId=u.UserId,
                     Name = u.Name,
                     Email = u.Email,
                     PhoneNo = u.PhoneNo,
@@ -230,20 +216,20 @@ namespace TickTockTrends_WEBAPI.Controllers
 
 
         //// DELETE: api/Users/5
-        //[HttpDelete("{id}")]
-        //public async Task<IActionResult> DeleteUser(int id)
-        //{
-        //    var user = await _context.Users.FindAsync(id);
-        //    if (user == null)
-        //    {
-        //        return NotFound();
-        //    }
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
 
-        //    _context.Users.Remove(user);
-        //    await _context.SaveChangesAsync();
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
 
-        //    return NoContent();
-        //}
+            return NoContent();
+        }
 
 
         //// send otp method
