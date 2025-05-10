@@ -16,22 +16,36 @@ namespace TickTockTrends_WEBAPI.Controllers
     public class BrandsController : ControllerBase
     {
         private readonly TickTockDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public BrandsController(TickTockDbContext context)
+        public BrandsController(TickTockDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         // GET: api/Brands
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Brand>>> GetBrands()
+        [HttpGet("GetBrands")]
+        public async Task<ActionResult> GetBrands()
         {
-            return await _context.Brands.ToListAsync();
+            var brand = await _context.Brands.Select(b => new BrandDTO
+            {
+                CategoryId = b.CategoryId,
+                BrandId = b.BrandId,
+                BrandName = b.BrandName,
+
+            }).ToListAsync();
+            return Ok(new
+            {
+                success = true,
+                Message = "Brand fetched successfully",
+                Brand = brand
+            });
         }
 
         // GET: api/Brands/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Brand>> GetBrand(int id)
+        [HttpGet("FindBrand/{id}")]
+        public async Task<ActionResult<BrandDTO>> FindBrand(int id)
         {
             var brand = await _context.Brands.FindAsync(id);
 
@@ -40,74 +54,113 @@ namespace TickTockTrends_WEBAPI.Controllers
                 return NotFound();
             }
 
-            return brand;
+            return Ok(brand);
         }
+
 
         // PUT: api/Brands/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutBrand(int id, Brand brand)
+        [HttpPut("UpdateBrand/{id}")]
+        public async Task<ActionResult> UpdateBrand(int id, [FromBody] BrandDTO UpdateBrand)
         {
-            if (id != brand.BrandId)
+            if (_context.Brands.Any(b => b.BrandName == UpdateBrand.BrandName && b.BrandId != id  ))
             {
-                return BadRequest();
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Brand already exists"
+                });
             }
+            var brand = await _context.Brands.FindAsync(id);
+            if (brand == null)
+            {
+                return NotFound($"Brand with Id {id} Not Found");
 
-            _context.Entry(brand).State = EntityState.Modified;
-
+            }
+            brand.BrandName = UpdateBrand.BrandName;
+            brand.CategoryId=UpdateBrand.CategoryId;
             try
             {
                 await _context.SaveChangesAsync();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Brand updated successfully."
+                });
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!BrandExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, $"Error updating Brand: {ex.Message}");
             }
-
-            return NoContent();
         }
 
         // POST: api/Brands
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<IActionResult> AddBrand([FromBody] BrandDTO model)
+        [HttpPost("AddBrand")]
+        public async Task<ActionResult> AddBrand([FromBody] BrandDTO AddBrand)
         {
-            if (model == null)
+            try
             {
-                return BadRequest("Brand cannot be null");
-            }
+                if (_context.Brands.Any(b => b.BrandName == AddBrand.BrandName))
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "This Brand already exists."
+                    });
+                }
 
-            var o = new Brand
+                var brand = new Brand
+                {
+                    CategoryId=AddBrand.CategoryId,
+                    BrandName=AddBrand.BrandName
+                    
+                };
+                _context.Brands.Add(brand);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Brand Added Successfully",
+                    Brand = new
+                    {
+                        brand.BrandName,
+                        brand.CategoryId,
+                    },
+                });
+            }
+            catch (Exception ex)
             {
-                CategoryId = model.CategoryId,
-                BrandName = model.BrandName,
-            };
-            _context.Brands.Add(o);
-            await _context.SaveChangesAsync();
-            return Ok("Brand added" + o);
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
 
         // DELETE: api/Brands/5
-        [HttpDelete("{id}")]
+        [HttpDelete("DeleteBrand")]
+
         public async Task<IActionResult> DeleteBrand(int id)
         {
             var brand = await _context.Brands.FindAsync(id);
             if (brand == null)
             {
-                return NotFound();
+                return NotFound($"Brand with Id {id} Not Found");
             }
+            try
+            {
+                _context.Brands.Remove(brand);
+                await _context.SaveChangesAsync();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Brand deleted successfully."
+                });
 
-            _context.Brands.Remove(brand);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error Deleting Brand: {ex.Message}");
+            }
         }
 
         private bool BrandExists(int id)

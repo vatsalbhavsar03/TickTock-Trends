@@ -68,6 +68,7 @@ app.UseCors("AllowFrontend");
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStaticFiles();
 
 app.MapControllers();
 app.Run();

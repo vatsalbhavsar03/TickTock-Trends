@@ -16,21 +16,47 @@ namespace TickTockTrends_WEBAPI.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly TickTockDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public ProductsController(TickTockDbContext context)
+        public ProductsController(TickTockDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         // GET: api/Products
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+        [HttpGet("GetProducts")]
+        public async Task<ActionResult> GetProducts()
         {
-            return await _context.Products.ToListAsync();
+            var products = await _context.Products
+                .Include(p => p.Category)  
+                .Include(p => p.Brand)    
+                .Select(p => new
+                {
+                    p.ProductId,
+                    p.Name,
+                    p.Price,
+                    p.Stock,
+                    p.Description,
+                    p.ImageUrl,
+                    CategoryName = p.Category.CategoryName,  
+                    BrandName = p.Brand.BrandName            
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Products fetched successfully",
+                products = products
+            });
         }
 
+
+
+
         // GET: api/Products/5
-        [HttpGet("{id}")]
+        [HttpGet("FindProduct/{id}")]
         public async Task<ActionResult<Product>> GetProduct(int id)
         {
             var product = await _context.Products.FindAsync(id);
@@ -45,76 +71,130 @@ namespace TickTockTrends_WEBAPI.Controllers
 
         // PUT: api/Products/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProduct(int id, Product product)
+        [HttpPut("UpdateProduct/{id}")]
+        public IActionResult UpdateProduct(int id, [FromBody] Productdto productDto)
         {
-            if (id != product.ProductId)
+            var existingProduct = _context.Products.Include(p => p.Category).Include(p => p.Brand).FirstOrDefault(p => p.ProductId == id);
+            if (existingProduct == null)
             {
-                return BadRequest();
+                return NotFound();
             }
 
-            _context.Entry(product).State = EntityState.Modified;
+            // Update the product 
+            existingProduct.Name = productDto.Name;
+            existingProduct.Price = productDto.Price;
+            existingProduct.Stock = productDto.Stock;
+            existingProduct.Description = productDto.Description;
 
-            try
+            // If the image is updated, handle it
+            if (productDto.ImageUrl != null)
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ProductExists(id))
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productDto.ImageUrl.FileName);
+                var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
+
+                Directory.CreateDirectory(Path.GetDirectoryName(imagePath)!);
+                using (var stream = new FileStream(imagePath, FileMode.Create))
                 {
-                    return NotFound();
+                    productDto.ImageUrl.CopyTo(stream);
                 }
-                else
-                {
-                    throw;
-                }
+                existingProduct.ImageUrl = $"/uploads/{fileName}"; 
             }
 
-            return NoContent();
+            // Update Category and Brand 
+            var category = _context.Categories.FirstOrDefault(c => c.CategoryId == productDto.CategoryId);
+            var brand = _context.Brands.FirstOrDefault(b => b.BrandId == productDto.BrandId);
+
+            if (category != null && brand != null)
+            {
+                existingProduct.CategoryId = category.CategoryId;
+                existingProduct.BrandId = brand.BrandId;
+                existingProduct.Category = category;
+                existingProduct.Brand = brand;
+            }
+            else
+            {
+                return BadRequest("Invalid category or brand.");
+            }
+
+            _context.SaveChanges();
+
+            return Ok(new { success = true, message = "Product updated successfully" });
         }
+
+
 
         // POST: api/Products
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<IActionResult> CreateProduct([FromBody] Productdto model)
+        [HttpPost("AddProduct")]
+        public async Task<IActionResult> AddProduct([FromForm] Productdto productDto)
         {
-            if (model == null)
+            try
             {
-                return BadRequest("Product cannot be null");
-            }
+                // Check if image is uploaded
+                if (productDto.ImageUrl == null || productDto.ImageUrl.Length == 0)
+                    return BadRequest(new { success = false, message = "Image file is required." });
 
-            var o = new Product
+                //  uploaded image
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productDto.ImageUrl.FileName);
+                var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
+
+                // Create the directory if it doesn't exist
+                Directory.CreateDirectory(Path.GetDirectoryName(imagePath)!);
+
+                // Save the image to the server
+                using (var stream = new FileStream(imagePath, FileMode.Create))
+                {
+                    await productDto.ImageUrl.CopyToAsync(stream);
+                }
+
+               
+                var product = new Product
+                {
+                    Name = productDto.Name,
+                    CategoryId = productDto.CategoryId,
+                    BrandId = productDto.BrandId,
+                    Price = productDto.Price,
+                    Stock = productDto.Stock,
+                    Description = productDto.Description,
+                    ImageUrl = $"/uploads/{fileName}",  
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+               
+                _context.Products.Add(product);
+                await _context.SaveChangesAsync();
+
+               
+                return Ok(new { success = true, message = "Product added successfully." });
+            }
+            catch (Exception ex)
             {
-                Name = model.Name,
-                Price = model.Price,
-                CategoryId = model.CategoryId,
-                BrandId = model.BrandId,
-                Stock = model.Stock,
-                ImageUrl = model.ImageUrl,
-                Description = model.Description,
-                CreatedAt = model.CreatedAt,
-                UpdatedAt = model.UpdatedAt
-            };
-            _context.Products.Add(o);
-            await _context.SaveChangesAsync();
-            return Ok("product added" + o);
+                
+                Console.WriteLine(ex.Message);
+                return StatusCode(500, new { success = false, message = $"Error: {ex.Message}" });
+            }
         }
 
+
+
+
+
+
         // DELETE: api/Products/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProduct(int id)
+        [HttpDelete("DeleteProduct/{id}")]
+        public IActionResult DeleteProduct(int id)
         {
-            var product = await _context.Products.FindAsync(id);
+            var product = _context.Products.Find(id);
             if (product == null)
             {
                 return NotFound();
             }
 
             _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            _context.SaveChanges();
 
-            return NoContent();
+            return Ok(new { success = true, message = "Product deleted successfully" });
         }
 
         private bool ProductExists(int id)

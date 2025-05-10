@@ -53,51 +53,6 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
 
-        //GET: api/Users/5
-        //[HttpGet("{id}")]
-        //public async Task<ActionResult<User>> GetUser(int id)
-        //{
-        //    var user = await _context.Users.FindAsync(id);
-
-        //    if (user == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    return user;
-        //}
-
-        // PUT: api/Users/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        //[HttpPut("{id}")]
-        //public async Task<IActionResult> PutUser(int id, User user)
-        //{
-        //    if (id != user.UserId)
-        //    {
-        //        return BadRequest();
-        //    }
-
-        //    _context.Entry(user).State = EntityState.Modified;
-
-        //    try
-        //    {
-        //        await _context.SaveChangesAsync();
-        //    }
-        //    catch (DbUpdateConcurrencyException)
-        //    {
-        //        if (!UserExists(id))
-        //        {
-        //            return NotFound();
-        //        }
-        //        else
-        //        {
-        //            throw;
-        //        }
-        //    }
-
-        //    return NoContent();
-        //}
-
         // Fetch Roles -----------
         [HttpGet("FetchRoles")]
         public async Task<ActionResult> FetchRoles()
@@ -166,55 +121,6 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
 
-        //[HttpPost("Register")]
-        //public async Task<ActionResult> Register([FromBody] RegisterUserDTO registerUserDto)
-        //{
-        //    try
-        //    {
-        //        if (_context.Users.Any(u => u.Email == registerUserDto.Email))
-        //        {
-        //            throw new Exception("Email Already Exists.");
-        //        }
-
-        //        var user = new User
-        //        {
-        //            Name = registerUserDto.Name,
-        //            Email = registerUserDto.Email,
-        //            Password = BCrypt.Net.BCrypt.HashPassword(registerUserDto.Password),
-        //            PhoneNo = registerUserDto.PhoneNo,
-        //            RoleId = registerUserDto.RoleId,
-        //            CreatedAt = DateTime.UtcNow, // Set CreatedAt timestamp
-        //            UpdatedAt = DateTime.UtcNow  // Set UpdatedAt timestamp
-        //        };
-
-        //        _context.Users.Add(user);
-        //        await _context.SaveChangesAsync();
-
-        //        return Ok(new
-        //        {
-        //            success = true,
-        //            message = "Successfully registered",
-        //            user = new
-        //            {
-        //                user.UserId,
-        //                user.RoleId,
-        //                user.Name,
-        //                user.Email,
-        //                user.PhoneNo,
-        //                user.CreatedAt,  // Include CreatedAt in response
-        //                user.UpdatedAt   // Include UpdatedAt in response
-        //            }
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new { success = false, message = ex.Message });
-        //    }
-        //}
-
-
-
-
         //// DELETE: api/Users/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
@@ -232,18 +138,6 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
 
-        //// send otp method
-        //[HttpPost("SendOTP")]
-        //public async Task<IActionResult> SendOtp([FromBody] SendOtpDto sendOtpDto)
-        //{
-        //    var otp = new Random().Next(100000, 999999).ToString();
-        //    HttpContext.Session.SetString("otp", otp);
-        //    HttpContext.Session.SetString("otpEmail", sendOtpDto.Email);
-
-        //    return await SendEmail(sendOtpDto.Email, otp)
-        //        ? Ok(new { success = true, message = "OTP sent successfully." })
-        //        : BadRequest(new { success = false, message = "Failed to send OTP." });
-        //}
         [HttpPost("SendOTP")]
         public async Task<IActionResult> SendOtp([FromBody] SendOtpDto sendOtpDto)
         {
@@ -264,27 +158,6 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
 
-        //[HttpPost("SendOTP")]
-        //public async Task<ActionResult> SendOtp([FromBody] SendOtpDto sendOtpDto)
-        //{
-        //    // ✅ Ensure Session is Available
-        //    if (HttpContext.Session == null)
-        //    {
-        //        return StatusCode(500, new { success = false, message = "Session is not available." });
-        //    }
-
-        //    var otp = new Random().Next(100000, 999999).ToString();
-        //    HttpContext.Session.SetString("otp", otp);
-        //    HttpContext.Session.SetString("otpEmail", sendOtpDto.Email);
-
-        //    bool emailSent = await SendEmail(sendOtpDto.Email, otp);
-
-        //    if (!emailSent)
-        //    {
-        //        return BadRequest(new { success = false, message = "Failed to send OTP." });
-        //    }
-        //    return Ok(new { success = true, message = "OTP sent successfully." });
-        //}
 
 
         // Send Email
@@ -323,31 +196,8 @@ namespace TickTockTrends_WEBAPI.Controllers
             }
         }
 
-        // verify otp functionality
-        //[HttpPost("VerifyOTP")]
-        //public async Task<ActionResult> VerifyOtp([FromBody] VerifyOtpDto verifyOtpDto)
-        //{
-        //    var sessionOtp = HttpContext.Session.GetString("otp");
-        //    var sessionEmail = HttpContext.Session.GetString("otpEmail");
 
-        //    if (sessionOtp == null || sessionEmail == null || sessionOtp != verifyOtpDto.Otp || sessionEmail != verifyOtpDto.Email)
-        //    {
-        //        return BadRequest(new
-        //        {
-        //            success = false,
-        //            message = "Invalid Or Expired OTP."
-        //        });
-        //    }
-
-        //    HttpContext.Session.Remove("otp");
-        //    HttpContext.Session.Remove("otpEmail");
-
-        //    return Ok(new
-        //    {
-        //        success = true,
-        //        message = "OTP Verified Successfully."
-        //    });
-        //}
+        // Verify OTP
         [HttpPost("VerifyOTP")]
         public async Task<ActionResult> VerifyOtp([FromBody] VerifyOtpDto verifyOtpDto)
         {
@@ -369,6 +219,8 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
 
+
+        // POST: api/Users/Login
         [HttpPost("login")]
         public async Task<ActionResult> login([FromBody] LoginUserDTO loginUserDto)
         {
@@ -394,6 +246,8 @@ namespace TickTockTrends_WEBAPI.Controllers
             });
         }
 
+
+        // GET: api/Users/5
         private string GenerateJwtToken(User user)
         {
             var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
@@ -418,6 +272,8 @@ namespace TickTockTrends_WEBAPI.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+
+        // GET: api/Users/5
         private string GetRedirectUrl(int roleId)
         {
             return roleId switch
