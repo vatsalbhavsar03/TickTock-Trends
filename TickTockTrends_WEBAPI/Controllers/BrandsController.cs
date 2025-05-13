@@ -28,23 +28,48 @@ namespace TickTockTrends_WEBAPI.Controllers
         [HttpGet("GetBrands")]
         public async Task<ActionResult> GetBrands()
         {
-            var brand = await _context.Brands.Select(b => new BrandDTO
-            {
-                CategoryId = b.CategoryId,
-                BrandId = b.BrandId,
-                BrandName = b.BrandName,
+            var brands = await _context.Brands
+                .Include(b => b.Category)
+                .Select(b => new BrandDTO
+                {
+                    BrandId = b.BrandId,
+                    BrandName = b.BrandName,
+                    CategoryId = b.CategoryId,
+                    CategoryName = b.Category != null ? b.Category.CategoryName : "Unknown"
+                })
+                .ToListAsync();
 
-            }).ToListAsync();
             return Ok(new
             {
                 success = true,
-                Message = "Brand fetched successfully",
-                Brand = brand
+                message = "Brand fetched successfully",
+                brand = brands
             });
         }
 
-            // GET: api/Brands/5
-            [HttpGet("FindBrand/{id}")]
+        //[HttpGet("GetBrands")]
+        //public async Task<ActionResult> GetBrands()
+        //{
+        //    var brand = await _context.Brands
+        //        .Include(b=>b.BrandName)
+        //        .Select(b => new BrandDTO
+        //    {
+        //        CategoryId = b.CategoryId,
+        //        BrandId = b.BrandId,
+        //        BrandName = b.BrandName,
+        //            CategoryName = b.Category.CategoryName
+
+        //        }).ToListAsync();
+        //    return Ok(new
+        //    {
+        //        success = true,
+        //        Message = "Brand fetched successfully",
+        //        Brand = brand
+        //    });
+        //}
+
+        // GET: api/Brands/5
+        [HttpGet("FindBrand/{id}")]
             public async Task<ActionResult<BrandDTO>> FindBrand(int id)
             {
                 var brand = await _context.Brands.FindAsync(id);
