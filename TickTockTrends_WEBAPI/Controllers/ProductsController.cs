@@ -55,71 +55,122 @@ namespace TickTockTrends_WEBAPI.Controllers
 
 
 
-        // GET: api/Products/5
-        [HttpGet("FindProduct/{id}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
+
+        [HttpGet("GetProductById/{id}")]
+        public IActionResult GetProductById(int id)
         {
-            var product = await _context.Products.FindAsync(id);
+            var product = _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .FirstOrDefault(p => p.ProductId == id);
 
             if (product == null)
             {
                 return NotFound();
             }
 
-            return product;
+            return Ok(new
+            {
+                product.ProductId,
+                product.Name,
+                product.Price,
+                product.Stock,
+                product.Description,
+                product.ImageUrl,
+                product.CategoryId,
+                product.BrandId,
+                CategoryName = product.Category?.CategoryName,
+                BrandName = product.Brand?.BrandName
+            });
         }
 
-        // PUT: api/Products/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("UpdateProduct/{id}")]
-        public IActionResult UpdateProduct(int id, [FromBody] Productdto productDto)
+        public async Task<IActionResult> UpdateProduct(int id, [FromForm] Productdto dto)
         {
-            var existingProduct = _context.Products.Include(p => p.Category).Include(p => p.Brand).FirstOrDefault(p => p.ProductId == id);
+            var existingProduct = await _context.Products.FindAsync(id);
             if (existingProduct == null)
-            {
                 return NotFound();
-            }
 
-            // Update the product 
-            existingProduct.Name = productDto.Name;
-            existingProduct.Price = productDto.Price;
-            existingProduct.Stock = productDto.Stock;
-            existingProduct.Description = productDto.Description;
+            existingProduct.Name = dto.Name;
+            existingProduct.Price = dto.Price;
+            existingProduct.Stock = dto.Stock;
+            existingProduct.Description = dto.Description;
+            existingProduct.UpdatedAt = DateTime.UtcNow;
 
-            // If the image is updated, handle it
-            if (productDto.ImageUrl != null)
+            if (dto.ImageUrl != null && dto.ImageUrl.Length > 0)
             {
-                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productDto.ImageUrl.FileName);
-                var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
+                var fileName = Guid.NewGuid() + Path.GetExtension(dto.ImageUrl.FileName);
+                var filePath = Path.Combine("wwwroot/uploads", fileName);
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
 
-                Directory.CreateDirectory(Path.GetDirectoryName(imagePath)!);
-                using (var stream = new FileStream(imagePath, FileMode.Create))
+                using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    productDto.ImageUrl.CopyTo(stream);
+                    await dto.ImageUrl.CopyToAsync(stream);
                 }
-                existingProduct.ImageUrl = $"/uploads/{fileName}"; 
+
+                existingProduct.ImageUrl = $"/uploads/{fileName}";
             }
 
-            // Update Category and Brand 
-            var category = _context.Categories.FirstOrDefault(c => c.CategoryId == productDto.CategoryId);
-            var brand = _context.Brands.FirstOrDefault(b => b.BrandId == productDto.BrandId);
+            existingProduct.CategoryId = dto.CategoryId;
+            existingProduct.BrandId = dto.BrandId;
 
-            if (category != null && brand != null)
-            {
-                existingProduct.CategoryId = category.CategoryId;
-                existingProduct.BrandId = brand.BrandId;
-                existingProduct.Category = category;
-                existingProduct.Brand = brand;
-            }
-            else
-            {
-                return BadRequest("Invalid category or brand.");
-            }
-
-            _context.SaveChanges();
-
-            return Ok(new { success = true, message = "Product updated successfully" });
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Product updated successfully" });
         }
+
+
+
+
+
+        //[HttpPut("UpdateProduct/{id}")]
+        //public IActionResult UpdateProduct(int id, [FromBody] Productdto productDto)
+        //{
+        //    var existingProduct = _context.Products.Include(p => p.Category).Include(p => p.Brand).FirstOrDefault(p => p.ProductId == id);
+        //    if (existingProduct == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    // Update the product 
+        //    existingProduct.Name = productDto.Name;
+        //    existingProduct.Price = productDto.Price;
+        //    existingProduct.Stock = productDto.Stock;
+        //    existingProduct.Description = productDto.Description;
+
+        //    // If the image is updated, handle it
+        //    if (productDto.ImageUrl != null)
+        //    {
+        //        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productDto.ImageUrl.FileName);
+        //        var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
+
+        //        Directory.CreateDirectory(Path.GetDirectoryName(imagePath)!);
+        //        using (var stream = new FileStream(imagePath, FileMode.Create))
+        //        {
+        //            productDto.ImageUrl.CopyTo(stream);
+        //        }
+        //        existingProduct.ImageUrl = $"/uploads/{fileName}"; 
+        //    }
+
+        //    // Update Category and Brand 
+        //    var category = _context.Categories.FirstOrDefault(c => c.CategoryId == productDto.CategoryId);
+        //    var brand = _context.Brands.FirstOrDefault(b => b.BrandId == productDto.BrandId);
+
+        //    if (category != null && brand != null)
+        //    {
+        //        existingProduct.CategoryId = category.CategoryId;
+        //        existingProduct.BrandId = brand.BrandId;
+        //        existingProduct.Category = category;
+        //        existingProduct.Brand = brand;
+        //    }
+        //    else
+        //    {
+        //        return BadRequest("Invalid category or brand.");
+        //    }
+
+        //    _context.SaveChanges();
+
+        //    return Ok(new { success = true, message = "Product updated successfully" });
+        //}
 
 
 

@@ -43,19 +43,36 @@ namespace TickTockTrends_WEBAPI.Controllers
             });
         }
 
-        // GET: api/Brands/5
-        [HttpGet("FindBrand/{id}")]
-        public async Task<ActionResult<BrandDTO>> FindBrand(int id)
-        {
-            var brand = await _context.Brands.FindAsync(id);
-
-            if (brand == null)
+            // GET: api/Brands/5
+            [HttpGet("FindBrand/{id}")]
+            public async Task<ActionResult<BrandDTO>> FindBrand(int id)
             {
-                return NotFound();
+                var brand = await _context.Brands.FindAsync(id);
+
+                if (brand == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(brand);
             }
 
-            return Ok(brand);
+        [HttpGet("GetBrandsByCategory/{categoryId}")]
+        public async Task<ActionResult<IEnumerable<BrandDTO>>> GetBrandsByCategory(int categoryId)
+        {
+            var brands = await _context.Brands
+                .Where(b => b.CategoryId == categoryId)
+                .Select(b => new BrandDTO
+                {
+                    BrandId = b.BrandId,
+                    BrandName = b.BrandName,
+                    CategoryId = b.CategoryId
+                })
+                .ToListAsync();
+
+            return Ok(brands);
         }
+
 
 
         // PUT: api/Brands/5

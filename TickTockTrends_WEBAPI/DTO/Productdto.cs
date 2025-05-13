@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace TickTockTrends_WEBAPI.DTO
 {
@@ -24,8 +25,8 @@ namespace TickTockTrends_WEBAPI.DTO
         [Range(0, int.MaxValue)]
         public int Stock { get; set; }
 
-        [Required]
-        public IFormFile ImageUrl { get; set; } = null!;
+        // OPTIONAL: Image file only for create or when changed
+        public IFormFile? ImageUrl { get; set; }
 
         [Required]
         [StringLength(500)]
