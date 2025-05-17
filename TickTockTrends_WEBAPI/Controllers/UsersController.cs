@@ -14,6 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TickTockTrends_WEBAPI.Controllers
 {
@@ -287,21 +288,44 @@ namespace TickTockTrends_WEBAPI.Controllers
 
 
         // GET: api/Users/5
+        //private string GenerateJwtToken(User user)
+        //{
+        //    var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
+        //    var claims = new[]
+        //    {
+        //    new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+        //    new Claim("UserId", user.UserId.ToString()),
+        //    new Claim("Role", user.Role.RoleName.ToString()),
+        //    new Claim("RoleId", user.RoleId.ToString()),
+        //};
+
+        //    var token = new JwtSecurityToken(
+        //        _configuration["Jwt:Issuer"],
+        //        _configuration["Jwt:Issuer"],
+        //        claims,
+        //        expires: DateTime.UtcNow.AddHours(2),
+        //        signingCredentials: new SigningCredentials(
+        //            new SymmetricSecurityKey(key),
+        //            SecurityAlgorithms.HmacSha256)
+        //    );
+
+        //    return new JwtSecurityTokenHandler().WriteToken(token);
+        //}
         private string GenerateJwtToken(User user)
         {
-            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
+            var key = Convert.FromBase64String(_configuration["Jwt:Key"]);
             var claims = new[]
             {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-            new Claim("UserId", user.UserId.ToString()),
-            new Claim("Role", user.Role.RoleName.ToString()),
-            new Claim("RoleId", user.RoleId.ToString()),
-        };
+        new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+        new Claim("UserId", user.UserId.ToString()),
+        new Claim("Role", user.Role.RoleName),
+        new Claim("RoleId", user.RoleId.ToString())
+    };
 
             var token = new JwtSecurityToken(
-                _configuration["Jwt:Issuer"],
-                _configuration["Jwt:Issuer"],
-                claims,
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
                 expires: DateTime.UtcNow.AddHours(2),
                 signingCredentials: new SigningCredentials(
                     new SymmetricSecurityKey(key),
@@ -407,6 +431,111 @@ namespace TickTockTrends_WEBAPI.Controllers
             return NoContent();
         }
 
+        [HttpGet("profile")]
+        [Authorize] // Requires authentication
+        public async Task<ActionResult> GetProfile()
+        {
+            try
+            {
+                // Extract user ID from JWT token
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+                // Fetch user from database
+                var user = await _context.Users
+                    .Where(u => u.UserId == userId)
+                    .Select(u => new
+                    {
+                        u.UserId,
+                        u.Name,
+                        u.Email,
+                        u.PhoneNo,
+                        u.RoleId,
+                        u.CreatedAt,
+                        u.UpdatedAt
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (user == null)
+                {
+                    return NotFound(new { success = false, message = "User not found." });
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    user
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+
+        [HttpPut("Updateprofile")]
+        [Authorize] // Requires authentication
+        public async Task<ActionResult> UpdateProfile([FromBody] UpdateProfileDTO updateProfileDto)
+        {
+            try
+            {
+                // Extract user ID from JWT token
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+                // Fetch user from database
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    return NotFound(new { success = false, message = "User not found." });
+                }
+
+                // Update fields (if provided in DTO)
+                if (!string.IsNullOrEmpty(updateProfileDto.Name))
+                {
+                    user.Name = updateProfileDto.Name;
+                }
+
+                if (!string.IsNullOrEmpty(updateProfileDto.Email))
+                {
+                    if (_context.Users.Any(u => u.Email == updateProfileDto.Email && u.UserId != userId))
+                    {
+                        throw new Exception("Email already in use by another account.");
+                    }
+                    user.Email = updateProfileDto.Email;
+                }
+
+                if (!string.IsNullOrEmpty(updateProfileDto.PhoneNo))
+                {
+                    user.PhoneNo = updateProfileDto.PhoneNo;
+                }
+
+                // Update timestamp (convert to IST, like in Register)
+                TimeZoneInfo indianTimeZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+                user.UpdatedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, indianTimeZone);
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Profile updated successfully",
+                    user = new
+                    {
+                        user.UserId,
+                        user.Name,
+                        user.Email,
+                        user.PhoneNo,
+                        user.RoleId,
+                        user.CreatedAt,
+                        user.UpdatedAt
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
 
         private bool UserExists(int id)
         {
