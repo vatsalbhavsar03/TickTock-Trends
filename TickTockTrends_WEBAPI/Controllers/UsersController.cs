@@ -30,30 +30,7 @@ namespace TickTockTrends_WEBAPI.Controllers
             _configuration = configuration;
         }
 
-      
-
-
-        //GET: api/Users
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<RegisterUserDTO>>> GetUsers()
-        {
-            var users = await _context.Users
-                .Select(u => new
-                {
-                    UserId=u.UserId,
-                    Name = u.Name,
-                    Email = u.Email,
-                    PhoneNo = u.PhoneNo,
-                    CreatedAt = u.CreatedAt.ToString("dd-MM-yyyy HH:mm:ss"),
-                    UpdatedAt = u.UpdatedAt.ToString("dd-MM-yyyy HH:mm:ss")
-                })
-                .ToListAsync();
-
-            return Ok(users);
-        }
-
-
-        // Fetch Roles -----------
+        // Fetch Roles 
         [HttpGet("FetchRoles")]
         public async Task<ActionResult> FetchRoles()
         {
@@ -65,6 +42,84 @@ namespace TickTockTrends_WEBAPI.Controllers
                 success = true,
                 message = "roles fetch successfully.",
                 Roles = roles,
+            });
+        }
+
+
+        //GET: api/Users
+        [HttpGet("GetUsers")]
+        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        {
+            var users = await _context.Users
+                .Where(u => u.RoleId == 2) 
+                .Select(u => new 
+                {
+                    UserId =u.UserId,
+                    Name = u.Name,
+                    Email = u.Email,
+                    PhoneNo = u.PhoneNo
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Users fetched successfully.",
+                users = users
+            });
+        }
+
+        //GET: api/Admin
+        [HttpGet("GetAdmin")]
+        public async Task<ActionResult<IEnumerable<User>>> GetAdmin()
+        {
+            var Admin = await _context.Users
+                .Where(u => u.RoleId == 1)
+                .Select(u => new
+                {
+                    UserId = u.UserId,
+                    Name = u.Name,
+                    Email = u.Email,
+                    PhoneNo = u.PhoneNo
+                })
+                .ToListAsync();
+            return Ok(new
+            {
+                success = true,
+                message = "Admin fetched successfully.",
+                Admin = Admin
+            });
+        }
+
+        //GET: api/Users/5
+        [HttpGet("GetUserById/{id}")]
+        public async Task<ActionResult> GetUserById(int id)
+        {
+            var user = await _context.Users
+                .Where(u => u.UserId == id && u.RoleId == 2)
+                .Select(u => new
+                {
+                    UserId = u.UserId,
+                    Name = u.Name,
+                    Email = u.Email,
+                    PhoneNo = u.PhoneNo
+                })
+                .FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = "User not found."
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "User fetched successfully.",
+                user = user
             });
         }
 
@@ -90,7 +145,7 @@ namespace TickTockTrends_WEBAPI.Controllers
                     Email = registerUserDto.Email,
                     Password = BCrypt.Net.BCrypt.HashPassword(registerUserDto.Password),
                     PhoneNo = registerUserDto.PhoneNo,
-                    RoleId = 2, // Always assign RoleId = 2
+                    RoleId = 2, 
                     CreatedAt = indianTime,
                     UpdatedAt = indianTime
                 };
@@ -105,7 +160,7 @@ namespace TickTockTrends_WEBAPI.Controllers
                     user = new
                     {
                         user.UserId,
-                        user.RoleId,  // Always 2
+                        user.RoleId,  
                         user.Name,
                         user.Email,
                         user.PhoneNo,
@@ -121,23 +176,7 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
 
-        //// DELETE: api/Users/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-
+        
         [HttpPost("SendOTP")]
         public async Task<IActionResult> SendOtp([FromBody] SendOtpDto sendOtpDto)
         {
@@ -282,6 +321,90 @@ namespace TickTockTrends_WEBAPI.Controllers
                 2 => "/user/dashboard",
                 _ => "/"
             };
+        }
+
+
+        // PUT: api/Users/5
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpPut("AdminUpdateUser/{id}")]
+        public async Task<IActionResult> AdminUpdateUser(int id, [FromBody] User updatedUser)
+        {
+            if (id != updatedUser.UserId)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "User ID mismatch."
+                });
+            }
+
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = "User not found."
+                });
+            }
+
+            if (_context.Users.Any(u => u.Email == updatedUser.Email && u.UserId != id))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Email already exists."
+                });
+            }
+
+            user.Name = updatedUser.Name;
+            user.Email = updatedUser.Email;
+            user.PhoneNo = updatedUser.PhoneNo;
+            user.RoleId = updatedUser.RoleId;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "An error occurred while updating the user."
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "User updated successfully.",
+                user = new
+                {
+                    user.UserId,
+                    user.Name,
+                    user.Email,
+                    user.PhoneNo,
+                    user.RoleId
+                }
+            });
+        }
+
+
+        // DELETE: api/Users/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
 
 

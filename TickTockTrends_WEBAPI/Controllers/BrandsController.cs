@@ -47,26 +47,7 @@ namespace TickTockTrends_WEBAPI.Controllers
             });
         }
 
-        //[HttpGet("GetBrands")]
-        //public async Task<ActionResult> GetBrands()
-        //{
-        //    var brand = await _context.Brands
-        //        .Include(b=>b.BrandName)
-        //        .Select(b => new BrandDTO
-        //    {
-        //        CategoryId = b.CategoryId,
-        //        BrandId = b.BrandId,
-        //        BrandName = b.BrandName,
-        //            CategoryName = b.Category.CategoryName
-
-        //        }).ToListAsync();
-        //    return Ok(new
-        //    {
-        //        success = true,
-        //        Message = "Brand fetched successfully",
-        //        Brand = brand
-        //    });
-        //}
+     
 
         // GET: api/Brands/5
         [HttpGet("FindBrand/{id}")]

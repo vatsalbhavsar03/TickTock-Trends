@@ -52,10 +52,7 @@ namespace TickTockTrends_WEBAPI.Controllers
             });
         }
 
-
-
-
-
+        // GET: api/Products/5
         [HttpGet("GetProductById/{id}")]
         public IActionResult GetProductById(int id)
         {
@@ -84,6 +81,43 @@ namespace TickTockTrends_WEBAPI.Controllers
             });
         }
 
+        // GET: api/Products/GetProductsByCategoryOrBrand/5
+        [HttpGet("GetProductsByCategoryOrBrand")]
+        public async Task<IActionResult> GetProductsByCategoryOrBrand([FromQuery] int? categoryId, [FromQuery] int? brandId)
+        {
+            var query = _context.Products.AsQueryable();
+
+            if (categoryId.HasValue)
+                query = query.Where(p => p.CategoryId == categoryId.Value);
+
+            if (brandId.HasValue)
+                query = query.Where(p => p.BrandId == brandId.Value);
+
+            var products = await query
+                .Select(p => new
+                {
+                    p.ProductId,
+                    p.Name,
+                    p.Price,
+                    p.Stock,
+                    p.ImageUrl,
+                    p.Description,
+                    p.CategoryId,
+                    p.BrandId,
+                   
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Products fetched successfully.",
+                products = products
+            });
+        }
+
+
+        // PUT: api/Products/5
         [HttpPut("UpdateProduct/{id}")]
         public async Task<IActionResult> UpdateProduct(int id, [FromForm] Productdto dto)
         {
@@ -117,61 +151,6 @@ namespace TickTockTrends_WEBAPI.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Product updated successfully" });
         }
-
-
-
-
-
-        //[HttpPut("UpdateProduct/{id}")]
-        //public IActionResult UpdateProduct(int id, [FromBody] Productdto productDto)
-        //{
-        //    var existingProduct = _context.Products.Include(p => p.Category).Include(p => p.Brand).FirstOrDefault(p => p.ProductId == id);
-        //    if (existingProduct == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    // Update the product 
-        //    existingProduct.Name = productDto.Name;
-        //    existingProduct.Price = productDto.Price;
-        //    existingProduct.Stock = productDto.Stock;
-        //    existingProduct.Description = productDto.Description;
-
-        //    // If the image is updated, handle it
-        //    if (productDto.ImageUrl != null)
-        //    {
-        //        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productDto.ImageUrl.FileName);
-        //        var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
-
-        //        Directory.CreateDirectory(Path.GetDirectoryName(imagePath)!);
-        //        using (var stream = new FileStream(imagePath, FileMode.Create))
-        //        {
-        //            productDto.ImageUrl.CopyTo(stream);
-        //        }
-        //        existingProduct.ImageUrl = $"/uploads/{fileName}"; 
-        //    }
-
-        //    // Update Category and Brand 
-        //    var category = _context.Categories.FirstOrDefault(c => c.CategoryId == productDto.CategoryId);
-        //    var brand = _context.Brands.FirstOrDefault(b => b.BrandId == productDto.BrandId);
-
-        //    if (category != null && brand != null)
-        //    {
-        //        existingProduct.CategoryId = category.CategoryId;
-        //        existingProduct.BrandId = brand.BrandId;
-        //        existingProduct.Category = category;
-        //        existingProduct.Brand = brand;
-        //    }
-        //    else
-        //    {
-        //        return BadRequest("Invalid category or brand.");
-        //    }
-
-        //    _context.SaveChanges();
-
-        //    return Ok(new { success = true, message = "Product updated successfully" });
-        //}
-
 
 
         // POST: api/Products
@@ -226,10 +205,6 @@ namespace TickTockTrends_WEBAPI.Controllers
                 return StatusCode(500, new { success = false, message = $"Error: {ex.Message}" });
             }
         }
-
-
-
-
 
 
         // DELETE: api/Products/5
