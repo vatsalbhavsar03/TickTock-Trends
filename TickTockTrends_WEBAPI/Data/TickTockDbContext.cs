@@ -27,7 +27,6 @@ namespace TickTockTrends_WEBAPI.Data
 
         public virtual DbSet<Role> Roles { get; set; }
 
-        public virtual DbSet<Shipping> Shippings { get; set; }
 
         public virtual DbSet<User> Users { get; set; }
 
@@ -278,34 +277,6 @@ namespace TickTockTrends_WEBAPI.Data
                     .HasColumnName("role_name");
             });
 
-            modelBuilder.Entity<Shipping>(entity =>
-            {
-                entity.HasKey(e => e.ShippingId).HasName("PK__Shipping__059B15A93F057252");
-
-                entity.ToTable("Shipping");
-
-                entity.Property(e => e.ShippingId).HasColumnName("shipping_id");
-                entity.Property(e => e.DeliveryDate)
-                    .HasColumnType("datetime")
-                    .HasColumnName("delivery_date");
-                entity.Property(e => e.OrderId).HasColumnName("order_id");
-                entity.Property(e => e.ShippedDate)
-                    .HasColumnType("datetime")
-                    .HasColumnName("shipped_date");
-                entity.Property(e => e.ShippingAddress)
-                    .HasMaxLength(255)
-                    .HasColumnName("shipping_address");
-
-                entity.Property(e => e.ShippingStatus)
-                    .HasConversion<string>()
-                    .HasMaxLength(100)
-                    .HasColumnName("shipping_status");
-
-                entity.HasOne(d => d.Order).WithMany(p => p.Shippings)
-                    .HasForeignKey(d => d.OrderId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK__Shipping__order___619B8048");
-            });
 
             modelBuilder.Entity<User>(entity =>
             {

@@ -24,8 +24,15 @@
 
         public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
-        public virtual ICollection<Shipping> Shippings { get; set; } = new List<Shipping>();
 
         public virtual User User { get; set; } = null!;
     }
-}
+
+    public enum Status
+    {
+        Pending,
+        Shipped,
+        Delivered,
+        Cancelled
+    }
+}       

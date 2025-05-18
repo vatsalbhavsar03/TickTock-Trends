@@ -24,8 +24,8 @@ namespace TickTockTrends_WEBAPI.Controllers
 
 
         // GET: api/Cart/GetCart
-        [HttpGet("GetCartDetails")]
-        public async Task<IActionResult> GetCart(int userId) // Now accepts userId as parameter
+        [HttpGet("GetCart")]
+        public async Task<IActionResult> GetCart(int userId)
         {
             try
             {
@@ -36,7 +36,12 @@ namespace TickTockTrends_WEBAPI.Controllers
 
                 if (cart == null)
                 {
-                    return Ok(new { success = true, message = "Cart is empty", items = new List<object>() });
+                    return NotFound(new
+                    {
+                        success = true,
+                        message = "Cart is empty",
+                        items = new List<object>()
+                    });
                 }
 
                 var cartItems = cart.CartItems.Select(ci => new
@@ -46,19 +51,30 @@ namespace TickTockTrends_WEBAPI.Controllers
                     ProductName = ci.Product.Name,
                     ci.Product.Price,
                     ci.Quantity,
-                    Subtotal = ci.Product.Price * ci.Quantity
+                    Subtotal = ci.Product.Price * ci.Quantity,
+                    ImageUrl = ci.Product.ImageUrl,
+                    Description = ci.Product.Description
                 }).ToList();
 
-                return Ok(new { success = true, cartId = cart.CartId, items = cartItems });
+                return Ok(new
+                {
+                    success = true,
+                    cartId = cart.CartId,
+                    items = cartItems
+                });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = ex.Message });
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = ex.Message
+                });
             }
         }
 
         // POST: api/Cart/AddToCart
-        [HttpPost("AddCartitem")]
+        [HttpPost("AddToCart")]
         public async Task<IActionResult> AddToCart([FromBody] AddCartItemDto cartItemDto)
         {
             try
@@ -67,7 +83,11 @@ namespace TickTockTrends_WEBAPI.Controllers
                 var product = await _context.Products.FindAsync(cartItemDto.ProductId);
                 if (product == null)
                 {
-                    return NotFound(new { success = false, message = "Product not found" });
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = "Product not found"
+                    });
                 }
 
                 // Get or create cart
@@ -94,7 +114,12 @@ namespace TickTockTrends_WEBAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
-                return Ok(new { success = true, message = "Item added to cart", cartId = cart.CartId });
+                return Ok(new
+                {
+                    success = true,
+                    message = "Item added to cart",
+                    cartId = cart.CartId
+                });
             }
             catch (Exception ex)
             {
@@ -111,17 +136,30 @@ namespace TickTockTrends_WEBAPI.Controllers
                 var cartItem = await _context.CartItems.FindAsync(cartItemId);
                 if (cartItem == null)
                 {
-                    return NotFound(new { success = false, message = "Cart item not found" });
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = "Cart item not found"
+                    });
                 }
 
                 if (updateDto.Quantity <= 0)
                 {
-                    return BadRequest(new { success = false, message = "Quantity must be greater than 0" });
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Quantity must be greater than 0"
+                    });
                 }
 
                 cartItem.Quantity = updateDto.Quantity;
                 await _context.SaveChangesAsync();
-                return Ok(new { success = true, message = "Cart item updated" });
+                return Ok(new
+                {
+                    success = true,
+                    message = "Cart item updated",
+                    cart = cartItem
+                });
             }
             catch (Exception ex)
             {
@@ -138,12 +176,20 @@ namespace TickTockTrends_WEBAPI.Controllers
                 var cartItem = await _context.CartItems.FindAsync(cartItemId);
                 if (cartItem == null)
                 {
-                    return NotFound(new { success = false, message = "Cart item not found" });
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = "Cart item not found"
+                    });
                 }
 
                 _context.CartItems.Remove(cartItem);
                 await _context.SaveChangesAsync();
-                return Ok(new { success = true, message = "Item removed from cart" });
+                return Ok(new
+                {
+                    success = true,
+                    message = "Item removed from cart"
+                });
             }
             catch (Exception ex)
             {
