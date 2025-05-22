@@ -25,5 +25,12 @@
         public virtual Brand Brand { get; set; } = null!;
 
         public virtual Category Category { get; set; } = null!;
+        public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
+
+        public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
+        public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+        public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
     }
 }

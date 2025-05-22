@@ -29,12 +29,12 @@ namespace TickTockTrends_WEBAPI.Controllers
         [HttpGet("GetCategory")]
         public async Task<ActionResult> GetCategories()
         {
-           var category = await _context.Categories.Select(c=>new CategoryDTO
-           {
-               CategoryId = c.CategoryId,
-               CategoryName = c.CategoryName,
+            var category = await _context.Categories.Select(c => new CategoryDTO
+            {
+                CategoryId = c.CategoryId,
+                CategoryName = c.CategoryName,
 
-           }).ToListAsync();
+            }).ToListAsync();
             return Ok(new
             {
                 success = true,
@@ -44,25 +44,38 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
         // GET: api/Categories/5
-        [HttpGet("FindCategory/{id}")]
-        public async Task<ActionResult<CategoryDTO>> FindCategory(int id)
+        [HttpGet("FindCategory/{Categoryid}")]
+        public async Task<ActionResult<CategoryDTO>> FindCategory(int Categoryid)
         {
-            var category = await _context.Categories.FindAsync(id);
+            var category = await _context.Categories.FindAsync(Categoryid);
 
             if (category == null)
             {
-                return NotFound();
+                return NotFound(new
+                {
+                    success = false,
+                    message = "Category not found"
+                });
             }
 
-            return Ok(category);
+            return Ok(new
+            {
+                success = true,
+                message = "Category fetched successfully",
+                category = new CategoryDTO
+                {
+                    CategoryId = category.CategoryId,
+                    CategoryName = category.CategoryName
+                }
+            });
         }
 
         // PUT: api/Categories/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("UpdateCategory/{id}")]
-        public async Task<ActionResult> UpdateCategory(int id, [FromBody] CategoryDTO UpdateCategory)
+        [HttpPut("UpdateCategory/{Categoryid}")]
+        public async Task<ActionResult> UpdateCategory(int Categoryid, [FromBody] CategoryDTO UpdateCategory)
         {
-            if(_context.Categories.Any(c=>c.CategoryName == UpdateCategory.CategoryName && c.CategoryId != id))
+            if (_context.Categories.Any(c => c.CategoryName == UpdateCategory.CategoryName && c.CategoryId != Categoryid))
             {
                 return BadRequest(new
                 {
@@ -70,19 +83,26 @@ namespace TickTockTrends_WEBAPI.Controllers
                     message = "Category already exists"
                 });
             }
-            var category = await _context.Categories.FindAsync(id);
-            if(category == null)
+            var category = await _context.Categories.FindAsync(Categoryid);
+            if (category == null)
             {
-                return NotFound($"Categories with Id {id} Not Found");
-               
+                return NotFound($"Categories with Id {Categoryid} Not Found");
+
             }
-            category.CategoryName= UpdateCategory.CategoryName;
+            category.CategoryName = UpdateCategory.CategoryName;
             try
             {
                 await _context.SaveChangesAsync();
-                return Ok(new 
-                { success = true, 
-                  message = "Category updated successfully." 
+                return Ok(new
+                {
+                    success = true,
+                    message = "Category updated successfully.",
+                    category = new CategoryDTO
+                    {
+                        CategoryId = category.CategoryId,
+                        CategoryName = category.CategoryName
+                    }
+
                 });
             }
             catch (Exception ex)
@@ -90,7 +110,7 @@ namespace TickTockTrends_WEBAPI.Controllers
                 return StatusCode(500, $"Error updating Category: {ex.Message}");
             }
         }
-        
+
 
         // POST: api/Categories
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
@@ -134,20 +154,21 @@ namespace TickTockTrends_WEBAPI.Controllers
         // DELETE: api/Categories/5
         [HttpDelete("DeleteCategory")]
 
-        public async Task<IActionResult> DeleteCategory(int id)
+        public async Task<IActionResult> DeleteCategory(int Categoryid)
         {
-            var category = await _context.Categories.FindAsync(id);
+            var category = await _context.Categories.FindAsync(Categoryid);
             if (category == null)
             {
-                return NotFound($"Category with Id {id} Not Found");
+                return NotFound($"Category with Id {Categoryid} Not Found");
             }
             try
             {
                 _context.Categories.Remove(category);
                 await _context.SaveChangesAsync();
                 return Ok(new
-                { success = true,
-                  message = "Category deleted successfully." 
+                {
+                    success = true,
+                    message = "Category deleted successfully."
                 });
 
             }

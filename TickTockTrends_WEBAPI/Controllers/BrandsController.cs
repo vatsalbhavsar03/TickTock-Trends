@@ -47,39 +47,34 @@ namespace TickTockTrends_WEBAPI.Controllers
             });
         }
 
-        //[HttpGet("GetBrands")]
-        //public async Task<ActionResult> GetBrands()
-        //{
-        //    var brand = await _context.Brands
-        //        .Include(b=>b.BrandName)
-        //        .Select(b => new BrandDTO
-        //    {
-        //        CategoryId = b.CategoryId,
-        //        BrandId = b.BrandId,
-        //        BrandName = b.BrandName,
-        //            CategoryName = b.Category.CategoryName
-
-        //        }).ToListAsync();
-        //    return Ok(new
-        //    {
-        //        success = true,
-        //        Message = "Brand fetched successfully",
-        //        Brand = brand
-        //    });
-        //}
+     
 
         // GET: api/Brands/5
-        [HttpGet("FindBrand/{id}")]
-            public async Task<ActionResult<BrandDTO>> FindBrand(int id)
+        [HttpGet("FindBrand/{Brandid}")]
+            public async Task<ActionResult<BrandDTO>> FindBrand(int Brandid)
             {
-                var brand = await _context.Brands.FindAsync(id);
+                var brand = await _context.Brands.FindAsync(Brandid);
 
                 if (brand == null)
                 {
-                    return NotFound();
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = "Brand not found"
+                    });
                 }
 
-                return Ok(brand);
+                return Ok(new
+                {
+                    success = true,
+                    message = "Brand fetched successfully",
+                    brand = new BrandDTO
+                    {
+                        BrandId = brand.BrandId,
+                        BrandName = brand.BrandName,
+                        CategoryId = brand.CategoryId
+                    }
+                });
             }
 
         [HttpGet("GetBrandsByCategory/{categoryId}")]
@@ -95,17 +90,22 @@ namespace TickTockTrends_WEBAPI.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(brands);
+            return Ok(new
+            {
+                success = true,
+                message = "Brands fetched successfully",
+                brands = brands
+            });
         }
 
 
 
         // PUT: api/Brands/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("UpdateBrand/{id}")]
-        public async Task<ActionResult> UpdateBrand(int id, [FromBody] BrandDTO UpdateBrand)
+        [HttpPut("UpdateBrand/{Brandid}")]
+        public async Task<ActionResult> UpdateBrand(int Brandid, [FromBody] BrandDTO UpdateBrand)
         {
-            if (_context.Brands.Any(b => b.BrandName == UpdateBrand.BrandName && b.BrandId != id  ))
+            if (_context.Brands.Any(b => b.BrandName == UpdateBrand.BrandName && b.BrandId != Brandid))
             {
                 return BadRequest(new
                 {
@@ -113,10 +113,10 @@ namespace TickTockTrends_WEBAPI.Controllers
                     message = "Brand already exists"
                 });
             }
-            var brand = await _context.Brands.FindAsync(id);
+            var brand = await _context.Brands.FindAsync(Brandid);
             if (brand == null)
             {
-                return NotFound($"Brand with Id {id} Not Found");
+                return NotFound($"Brand with Id {Brandid} Not Found");
 
             }
             brand.BrandName = UpdateBrand.BrandName;
@@ -127,7 +127,12 @@ namespace TickTockTrends_WEBAPI.Controllers
                 return Ok(new
                 {
                     success = true,
-                    message = "Brand updated successfully."
+                    message = "Brand updated successfully.",
+                    Brand = new
+                    {
+                        brand.BrandName,
+                        brand.CategoryId,
+                    },
                 });
             }
             catch (Exception ex)
@@ -181,12 +186,12 @@ namespace TickTockTrends_WEBAPI.Controllers
         // DELETE: api/Brands/5
         [HttpDelete("DeleteBrand")]
 
-        public async Task<IActionResult> DeleteBrand(int id)
+        public async Task<IActionResult> DeleteBrand(int Brandid)
         {
-            var brand = await _context.Brands.FindAsync(id);
+            var brand = await _context.Brands.FindAsync(Brandid);
             if (brand == null)
             {
-                return NotFound($"Brand with Id {id} Not Found");
+                return NotFound($"Brand with Id {Brandid} Not Found");
             }
             try
             {

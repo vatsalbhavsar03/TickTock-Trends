@@ -52,25 +52,28 @@ namespace TickTockTrends_WEBAPI.Controllers
             });
         }
 
-
-
-
-
-        [HttpGet("GetProductById/{id}")]
-        public IActionResult GetProductById(int id)
+        // GET: api/Products/5
+        [HttpGet("GetProductById/{Productid}")]
+        public IActionResult GetProductById(int Productid)
         {
             var product = _context.Products
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
-                .FirstOrDefault(p => p.ProductId == id);
+                .FirstOrDefault(p => p.ProductId == Productid);
 
             if (product == null)
             {
-                return NotFound();
+                return NotFound(new
+                {
+                    success = false,
+                    message = "Product not found"
+                });
             }
 
             return Ok(new
             {
+                success = true,
+                message = "Product fetched successfully",
                 product.ProductId,
                 product.Name,
                 product.Price,
@@ -84,12 +87,56 @@ namespace TickTockTrends_WEBAPI.Controllers
             });
         }
 
-        [HttpPut("UpdateProduct/{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromForm] Productdto dto)
+        // GET: api/Products/GetProductsByCategoryOrBrand/5
+        [HttpGet("GetProductsByCategoryOrBrand")]
+        public async Task<IActionResult> GetProductsByCategoryOrBrand([FromQuery] int? categoryId, [FromQuery] int? brandId)
         {
-            var existingProduct = await _context.Products.FindAsync(id);
+            var query = _context.Products.AsQueryable();
+
+            if (categoryId.HasValue)
+                query = query.Where(p => p.CategoryId == categoryId.Value);
+
+            if (brandId.HasValue)
+                query = query.Where(p => p.BrandId == brandId.Value);
+
+            var products = await query
+                .Select(p => new
+                {
+                    p.ProductId,
+                    p.Name,
+                    p.Price,
+                    p.Stock,
+                    p.ImageUrl,
+                    p.Description,
+                    p.CategoryId,
+                    p.BrandId,
+                   
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Products fetched successfully.",
+                products = products
+            });
+        }
+
+
+        // PUT: api/Products/5
+        [HttpPut("UpdateProduct/{Productid}")]
+        public async Task<IActionResult> UpdateProduct(int Productid, [FromForm] Productdto dto)
+        {
+            var existingProduct = await _context.Products.FindAsync(Productid);
             if (existingProduct == null)
-                return NotFound();
+            {
+                return NotFound(new 
+                {
+                    success = false,
+                    message = "Product not found"
+                });
+            }
+
 
             existingProduct.Name = dto.Name;
             existingProduct.Price = dto.Price;
@@ -115,63 +162,23 @@ namespace TickTockTrends_WEBAPI.Controllers
             existingProduct.BrandId = dto.BrandId;
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Product updated successfully" });
+            return Ok(new 
+            {
+                success = true,
+                message = "Product updated successfully",
+                product = new
+                {
+                    existingProduct.ProductId,
+                    existingProduct.Name,
+                    existingProduct.Price,
+                    existingProduct.Stock,
+                    existingProduct.Description,
+                    existingProduct.ImageUrl,
+                    existingProduct.CategoryId,
+                    existingProduct.BrandId
+                }
+            });
         }
-
-
-
-
-
-        //[HttpPut("UpdateProduct/{id}")]
-        //public IActionResult UpdateProduct(int id, [FromBody] Productdto productDto)
-        //{
-        //    var existingProduct = _context.Products.Include(p => p.Category).Include(p => p.Brand).FirstOrDefault(p => p.ProductId == id);
-        //    if (existingProduct == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    // Update the product 
-        //    existingProduct.Name = productDto.Name;
-        //    existingProduct.Price = productDto.Price;
-        //    existingProduct.Stock = productDto.Stock;
-        //    existingProduct.Description = productDto.Description;
-
-        //    // If the image is updated, handle it
-        //    if (productDto.ImageUrl != null)
-        //    {
-        //        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productDto.ImageUrl.FileName);
-        //        var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
-
-        //        Directory.CreateDirectory(Path.GetDirectoryName(imagePath)!);
-        //        using (var stream = new FileStream(imagePath, FileMode.Create))
-        //        {
-        //            productDto.ImageUrl.CopyTo(stream);
-        //        }
-        //        existingProduct.ImageUrl = $"/uploads/{fileName}"; 
-        //    }
-
-        //    // Update Category and Brand 
-        //    var category = _context.Categories.FirstOrDefault(c => c.CategoryId == productDto.CategoryId);
-        //    var brand = _context.Brands.FirstOrDefault(b => b.BrandId == productDto.BrandId);
-
-        //    if (category != null && brand != null)
-        //    {
-        //        existingProduct.CategoryId = category.CategoryId;
-        //        existingProduct.BrandId = brand.BrandId;
-        //        existingProduct.Category = category;
-        //        existingProduct.Brand = brand;
-        //    }
-        //    else
-        //    {
-        //        return BadRequest("Invalid category or brand.");
-        //    }
-
-        //    _context.SaveChanges();
-
-        //    return Ok(new { success = true, message = "Product updated successfully" });
-        //}
-
 
 
         // POST: api/Products
@@ -183,7 +190,11 @@ namespace TickTockTrends_WEBAPI.Controllers
             {
                 // Check if image is uploaded
                 if (productDto.ImageUrl == null || productDto.ImageUrl.Length == 0)
-                    return BadRequest(new { success = false, message = "Image file is required." });
+                    return BadRequest(new 
+                    { 
+                        success = false, 
+                        message = "Image file is required." 
+                    });
 
                 //  uploaded image
                 var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productDto.ImageUrl.FileName);
@@ -217,7 +228,22 @@ namespace TickTockTrends_WEBAPI.Controllers
                 await _context.SaveChangesAsync();
 
                
-                return Ok(new { success = true, message = "Product added successfully." });
+                return Ok(new 
+                { 
+                    success = true, 
+                    message = "Product added successfully.",
+                    product = new
+                    {
+                        product.ProductId,
+                        product.Name,
+                        product.Price,
+                        product.Stock,
+                        product.Description,
+                        product.ImageUrl,
+                        product.CategoryId,
+                        product.BrandId
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -228,24 +254,28 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
 
-
-
-
-
         // DELETE: api/Products/5
-        [HttpDelete("DeleteProduct/{id}")]
-        public IActionResult DeleteProduct(int id)
+        [HttpDelete("DeleteProduct/{Productid}")]
+        public IActionResult DeleteProduct(int Productid)
         {
-            var product = _context.Products.Find(id);
+            var product = _context.Products.Find(Productid);
             if (product == null)
             {
-                return NotFound();
+                return NotFound(new
+                {
+                    success = false,
+                    message = "Product not found"
+                });
             }
 
             _context.Products.Remove(product);
             _context.SaveChanges();
 
-            return Ok(new { success = true, message = "Product deleted successfully" });
+            return Ok(new 
+            { 
+                success = true, 
+                message = "Product deleted successfully" 
+            });
         }
 
         private bool ProductExists(int id)
