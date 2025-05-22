@@ -173,13 +173,13 @@ namespace TickTockTrends_WEBAPI.Controllers
                 using var smtp = new SmtpClient("smtp.gmail.com")
                 {
                     Port = 587,
-                    Credentials = new NetworkCredential("bhavsarvatsal337@gmail.com", "tptg vvyt sgdv qgho"),
+                    Credentials = new NetworkCredential("rutvikvariya3222@gmail.com", "zrng edwn dulq tdjg"),
                     EnableSsl = true,
                 };
 
                 var mailMsg = new MailMessage
                 {
-                    From = new MailAddress("bhavsarvatsal337@gmail.com"),
+                    From = new MailAddress("rutvikvariya3222@gmail.com"),
                     Subject = "Your OTP code for Registration.",
                     Body = emailBody,
                     IsBodyHtml = true,
