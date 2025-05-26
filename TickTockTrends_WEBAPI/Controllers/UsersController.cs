@@ -15,6 +15,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace TickTockTrends_WEBAPI.Controllers
 {
@@ -58,7 +59,10 @@ namespace TickTockTrends_WEBAPI.Controllers
                     UserId =u.UserId,
                     Name = u.Name,
                     Email = u.Email,
-                    PhoneNo = u.PhoneNo
+                    PhoneNo = u.PhoneNo,
+                    CreatedAt=u.CreatedAt,
+                    UpdatedAt = u.UpdatedAt
+
                 })
                 .ToListAsync();
 

@@ -30,12 +30,12 @@ namespace TickTockTrends_WEBAPI.Controllers
         {
             var brands = await _context.Brands
                 .Include(b => b.Category)
-                .Select(b => new BrandDTO
+                .Select(b => new 
                 {
                     BrandId = b.BrandId,
                     BrandName = b.BrandName,
                     CategoryId = b.CategoryId,
-                    CategoryName = b.Category != null ? b.Category.CategoryName : "Unknown"
+                    CategoryName = b.Category.CategoryName
                 })
                 .ToListAsync();
 
@@ -119,8 +119,11 @@ namespace TickTockTrends_WEBAPI.Controllers
                 return NotFound($"Brand with Id {Brandid} Not Found");
 
             }
+
+            brand.CategoryId = UpdateBrand.CategoryId;
             brand.BrandName = UpdateBrand.BrandName;
-            brand.CategoryId=UpdateBrand.CategoryId;
+
+
             try
             {
                 await _context.SaveChangesAsync();

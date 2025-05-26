@@ -12,6 +12,5 @@ namespace TickTockTrends_WEBAPI.DTO
         [Required(ErrorMessage = "Brand name is required.")]
         public string BrandName { get; set; } = null!;
 
-        public string CategoryName { get; set; }
     }
 }
