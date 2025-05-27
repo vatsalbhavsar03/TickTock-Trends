@@ -130,6 +130,55 @@ namespace TickTockTrends_WEBAPI.Controllers
 
 
         // POST: api/Users/Register
+        //[HttpPost("Register")]
+        //public async Task<ActionResult> Register([FromBody] RegisterUserDTO registerUserDto)
+        //{
+        //    try
+        //    {
+        //        if (_context.Users.Any(u => u.Email == registerUserDto.Email))
+        //        {
+        //            throw new Exception("Email Already Exists.");
+        //        }
+
+        //        // Convert UTC to Indian Standard Time (IST)
+        //        TimeZoneInfo indianTimeZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+        //        DateTime indianTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, indianTimeZone);
+
+        //        var user = new User
+        //        {
+        //            Name = registerUserDto.Name,
+        //            Email = registerUserDto.Email,
+        //            Password = BCrypt.Net.BCrypt.HashPassword(registerUserDto.Password),
+        //            PhoneNo = registerUserDto.PhoneNo,
+        //            RoleId = 2, 
+        //            CreatedAt = indianTime,
+        //            UpdatedAt = indianTime
+        //        };
+
+        //        _context.Users.Add(user);
+        //        await _context.SaveChangesAsync();
+
+        //        return Ok(new
+        //        {
+        //            success = true,
+        //            message = "Successfully registered",
+        //            user = new
+        //            {
+        //                user.UserId,
+        //                user.RoleId,  
+        //                user.Name,
+        //                user.Email,
+        //                user.PhoneNo,
+        //                user.CreatedAt,
+        //                user.UpdatedAt
+        //            }
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new { success = false, message = ex.Message });
+        //    }
+        //}
         [HttpPost("Register")]
         public async Task<ActionResult> Register([FromBody] RegisterUserDTO registerUserDto)
         {
@@ -137,10 +186,9 @@ namespace TickTockTrends_WEBAPI.Controllers
             {
                 if (_context.Users.Any(u => u.Email == registerUserDto.Email))
                 {
-                    throw new Exception("Email Already Exists.");
+                    return BadRequest(new { success = false, message = "Email Already Exists." });
                 }
 
-                // Convert UTC to Indian Standard Time (IST)
                 TimeZoneInfo indianTimeZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
                 DateTime indianTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, indianTimeZone);
 
@@ -150,7 +198,7 @@ namespace TickTockTrends_WEBAPI.Controllers
                     Email = registerUserDto.Email,
                     Password = BCrypt.Net.BCrypt.HashPassword(registerUserDto.Password),
                     PhoneNo = registerUserDto.PhoneNo,
-                    RoleId = 2, 
+                    RoleId = 2,
                     CreatedAt = indianTime,
                     UpdatedAt = indianTime
                 };
@@ -158,14 +206,18 @@ namespace TickTockTrends_WEBAPI.Controllers
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
+                // Generate JWT token using your method
+                var token = GenerateJwtToken(user);
+
                 return Ok(new
                 {
                     success = true,
                     message = "Successfully registered",
+                    token,
                     user = new
                     {
                         user.UserId,
-                        user.RoleId,  
+                        user.RoleId,
                         user.Name,
                         user.Email,
                         user.PhoneNo,
@@ -181,7 +233,8 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
 
-        
+
+
         [HttpPost("SendOTP")]
         public async Task<IActionResult> SendOtp([FromBody] SendOtpDto sendOtpDto)
         {
@@ -288,6 +341,35 @@ namespace TickTockTrends_WEBAPI.Controllers
                 roleId = user.RoleId,
                 redirectUrl = GetRedirectUrl(user.RoleId)
             });
+        }
+
+        //POST: api/Users/ForgotPassword
+        [HttpPost("ForgotPassword")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordDTO forgotPasswordDTO)
+        {
+            var data = await _context.Users.FirstOrDefaultAsync(fp => fp.Email == forgotPasswordDTO.Email);
+            if (data == null)
+            {
+                return NotFound(new { success = false, message = "User not found." });
+            }
+
+            var oldPasswordHash = data.Password;
+
+            if (BCrypt.Net.BCrypt.Verify(forgotPasswordDTO.Password, oldPasswordHash))
+            {
+                return BadRequest(new { success = false, message = "New password cannot be same as old password." });
+            }
+
+            try
+            {
+                data.Password = BCrypt.Net.BCrypt.HashPassword(forgotPasswordDTO.Password);
+                await _context.SaveChangesAsync();
+                return Ok(new { success = true, message = "Password updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error in student: {ex.InnerException}");
+            }
         }
 
 
@@ -435,16 +517,59 @@ namespace TickTockTrends_WEBAPI.Controllers
             return NoContent();
         }
 
+        //[HttpGet("profile")]
+        //[Authorize] // Requires authentication
+        //public async Task<ActionResult> GetProfile()
+        //{
+        //    try
+        //    {
+        //        // Extract user ID from JWT token
+        //        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+        //        // Fetch user from database
+        //        var user = await _context.Users
+        //            .Where(u => u.UserId == userId)
+        //            .Select(u => new
+        //            {
+        //                u.UserId,
+        //                u.Name,
+        //                u.Email,
+        //                u.PhoneNo,
+        //                u.RoleId,
+        //                u.CreatedAt,
+        //                u.UpdatedAt
+        //            })
+        //            .FirstOrDefaultAsync();
+
+        //        if (user == null)
+        //        {
+        //            return NotFound(new { success = false, message = "User not found." });
+        //        }
+
+        //        return Ok(new
+        //        {
+        //            success = true,
+        //            user
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new { success = false, message = ex.Message });
+        //    }
+        //}
+
         [HttpGet("profile")]
-        [Authorize] // Requires authentication
+        [Authorize]
         public async Task<ActionResult> GetProfile()
         {
             try
             {
-                // Extract user ID from JWT token
-                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+                var userIdClaim = User.FindFirst("UserId")?.Value;
+                if (!int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized(new { success = false, message = "Invalid token." });
+                }
 
-                // Fetch user from database
                 var user = await _context.Users
                     .Where(u => u.UserId == userId)
                     .Select(u => new
@@ -464,11 +589,7 @@ namespace TickTockTrends_WEBAPI.Controllers
                     return NotFound(new { success = false, message = "User not found." });
                 }
 
-                return Ok(new
-                {
-                    success = true,
-                    user
-                });
+                return Ok(new { success = true, user });
             }
             catch (Exception ex)
             {
@@ -477,46 +598,36 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
 
-        [HttpPut("Updateprofile")]
-        [Authorize] // Requires authentication
-        public async Task<ActionResult> UpdateProfile([FromBody] UpdateProfileDTO updateProfileDto)
+
+
+        [HttpPut("update-profile")]
+        [Authorize]
+        public async Task<ActionResult> UpdateProfile([FromBody] UpdateProfileDTO updateDto)
         {
             try
             {
-                // Extract user ID from JWT token
-                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+                var userIdClaim = User.FindFirst("UserId")?.Value;
+                if (!int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized(new { success = false, message = "Invalid token." });
+                }
 
-                // Fetch user from database
                 var user = await _context.Users.FindAsync(userId);
                 if (user == null)
                 {
                     return NotFound(new { success = false, message = "User not found." });
                 }
 
-                // Update fields (if provided in DTO)
-                if (!string.IsNullOrEmpty(updateProfileDto.Name))
-                {
-                    user.Name = updateProfileDto.Name;
-                }
+                // Update fields
+                user.Name = updateDto.Name;
+                user.PhoneNo = updateDto.PhoneNo;
+                user.Email = updateDto.Email;
 
-                if (!string.IsNullOrEmpty(updateProfileDto.Email))
-                {
-                    if (_context.Users.Any(u => u.Email == updateProfileDto.Email && u.UserId != userId))
-                    {
-                        throw new Exception("Email already in use by another account.");
-                    }
-                    user.Email = updateProfileDto.Email;
-                }
-
-                if (!string.IsNullOrEmpty(updateProfileDto.PhoneNo))
-                {
-                    user.PhoneNo = updateProfileDto.PhoneNo;
-                }
-
-                // Update timestamp (convert to IST, like in Register)
+                // Update timestamp
                 TimeZoneInfo indianTimeZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
                 user.UpdatedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, indianTimeZone);
 
+                _context.Users.Update(user);
                 await _context.SaveChangesAsync();
 
                 return Ok(new
@@ -529,8 +640,6 @@ namespace TickTockTrends_WEBAPI.Controllers
                         user.Name,
                         user.Email,
                         user.PhoneNo,
-                        user.RoleId,
-                        user.CreatedAt,
                         user.UpdatedAt
                     }
                 });
@@ -540,6 +649,7 @@ namespace TickTockTrends_WEBAPI.Controllers
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
+
 
         private bool UserExists(int id)
         {
