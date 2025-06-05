@@ -19,6 +19,47 @@ namespace TickTockTrends_WEBAPI.Controllers
             _configuration = configuration;
         }
 
+        // GET: api/Order/GetAllOrders
+        [HttpGet("GetAllOrders")]
+        public async Task<IActionResult> GetAllOrders()
+        {
+            var orders = await _context.Orders
+                .Include(o => o.User)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .OrderByDescending(o => o.OrderDate)
+                .ToListAsync();
+
+            var result = orders.Select(order => new
+            {
+                OrderId = order.OrderId,
+                UserId = order.UserId,
+                UserName = order.User?.Name,
+                Email = order.User?.Email,
+                Phone = order.Phone,
+                Address = order.Address,
+                Status = order.Status,
+                TotalAmount = order.TotalAmount,
+                OrderDate = order.OrderDate,
+                Items = order.OrderItems.Select(oi => new
+                {
+                    ProductId = oi.ProductId,
+                    ProductName = oi.Product?.Name,
+                    ImageUrl=oi.Product.ImageUrl,
+                    Quantity = oi.Quantity,
+                    Price = oi.Price,
+                    Total = oi.Quantity * oi.Price
+                })
+            });
+
+            return Ok(new
+            {
+                success = true,
+                orders = result
+            });
+        }
+
+
         // POST: api/Order
         [HttpPost("CreateOrder")]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto Dto)
@@ -147,9 +188,9 @@ namespace TickTockTrends_WEBAPI.Controllers
             return Ok("Order cancelled successfully.");
         }
 
-        // GET /api/admin/orders - List all orders
-        [HttpGet("GetAllOrders")]
-        public async Task<IActionResult> GetAllOrders([FromQuery] string? status)
+        // GET /api/admin/orders - List  orders by status
+        [HttpGet("GetOrdersByStatus")]
+        public async Task<IActionResult> GetOrdersByStatus([FromQuery] string? status)
         {
             var query = _context.Orders
                 .Include(o => o.User)
