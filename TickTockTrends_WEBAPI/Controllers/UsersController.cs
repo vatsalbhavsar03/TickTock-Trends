@@ -53,14 +53,14 @@ namespace TickTockTrends_WEBAPI.Controllers
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
             var users = await _context.Users
-                .Where(u => u.RoleId == 2) 
-                .Select(u => new 
+                .Where(u => u.RoleId == 2)
+                .Select(u => new
                 {
-                    UserId =u.UserId,
+                    UserId = u.UserId,
                     Name = u.Name,
                     Email = u.Email,
                     PhoneNo = u.PhoneNo,
-                    CreatedAt=u.CreatedAt,
+                    CreatedAt = u.CreatedAt,
                     UpdatedAt = u.UpdatedAt
 
                 })
@@ -287,7 +287,7 @@ namespace TickTockTrends_WEBAPI.Controllers
                 await smtp.SendMailAsync(mailMsg);
                 return true;
             }
-            catch 
+            catch
             {
                 return false;
             }
@@ -374,39 +374,20 @@ namespace TickTockTrends_WEBAPI.Controllers
 
 
         // GET: api/Users/5
-        //private string GenerateJwtToken(User user)
-        //{
-        //    var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
-        //    var claims = new[]
-        //    {
-        //    new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-        //    new Claim("UserId", user.UserId.ToString()),
-        //    new Claim("Role", user.Role.RoleName.ToString()),
-        //    new Claim("RoleId", user.RoleId.ToString()),
-        //};
-
-        //    var token = new JwtSecurityToken(
-        //        _configuration["Jwt:Issuer"],
-        //        _configuration["Jwt:Issuer"],
-        //        claims,
-        //        expires: DateTime.UtcNow.AddHours(2),
-        //        signingCredentials: new SigningCredentials(
-        //            new SymmetricSecurityKey(key),
-        //            SecurityAlgorithms.HmacSha256)
-        //    );
-
-        //    return new JwtSecurityTokenHandler().WriteToken(token);
-        //}
         private string GenerateJwtToken(User user)
         {
             var key = Convert.FromBase64String(_configuration["Jwt:Key"]);
+
+            // Make sure Role is not null
+            string roleName = user.Role?.RoleName ?? "User"; // fallback if Role is null
+
             var claims = new[]
             {
-        new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-        new Claim("UserId", user.UserId.ToString()),
-        new Claim("Role", user.Role.RoleName),
-        new Claim("RoleId", user.RoleId.ToString())
-    };
+                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                new Claim("UserId", user.UserId.ToString()),
+                new Claim("Role", roleName),
+                new Claim("RoleId", user.RoleId.ToString())
+            };
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
@@ -420,6 +401,9 @@ namespace TickTockTrends_WEBAPI.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+
+
 
 
         // GET: api/Users/5

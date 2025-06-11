@@ -278,6 +278,101 @@ namespace TickTockTrends_WEBAPI.Controllers
             });
         }
 
+        // GET: api/Product/Search
+        [HttpGet("Search")]
+        public async Task<IActionResult> SearchProducts([FromQuery] string? keyword)
+        {
+            var query = _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                keyword = keyword.ToLower();
+
+                query = query.Where(p =>
+                    p.Name.ToLower().Contains(keyword) ||
+                    p.Brand.BrandName.ToLower().Contains(keyword) ||
+                    p.Category.CategoryName.ToLower().Contains(keyword));
+            }
+
+            var products = await query.ToListAsync();
+
+            return Ok(new
+            {
+                success = true,
+                count = products.Count,
+                products = products.Select(p => new
+                {
+                    p.ProductId,
+                    p.Name,
+                    p.Description,
+                    p.Price,
+                    p.Stock,
+                    p.ImageUrl,
+                    CategoryName = p.Category.CategoryName,
+                    BrandName = p.Brand.BrandName
+                })
+            });
+        }
+
+        [HttpGet("GetFilterOptions")]
+        public async Task<IActionResult> GetFilterOptions()
+        {
+            var categories = await _context.Categories
+                .Select(c => new { value = c.CategoryName.ToLower(), label = c.CategoryName })
+                .ToListAsync();
+
+            var brands = await _context.Brands
+                .Select(b => new { value = b.BrandName.ToLower(), label = b.BrandName })
+                .ToListAsync();
+
+            return Ok(new { success = true, categories, brands });
+        }
+
+        [HttpGet("GetFilteredProducts")]
+        public async Task<IActionResult> GetFilteredProducts(string? category, string? brand, string? sortOrder)
+        {
+            var query = _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(category))
+                query = query.Where(p => p.Category.CategoryName.ToLower().Contains(category.ToLower()));
+
+            if (!string.IsNullOrEmpty(brand))
+                query = query.Where(p => p.Brand.BrandName.ToLower().Contains(brand.ToLower()));
+
+            if (!string.IsNullOrEmpty(sortOrder))
+            {
+                query = sortOrder.ToLower() switch
+                {
+                    "lowtohigh" => query.OrderBy(p => p.Price),
+                    "hightolow" => query.OrderByDescending(p => p.Price),
+                    _ => query
+                };
+            }
+
+            var products = await query.Select(p => new
+            {
+                p.ProductId,
+                p.Name,
+                p.Description,
+                p.Price,
+                p.Stock,
+                p.ImageUrl,
+                CategoryName = p.Category.CategoryName,
+                BrandName = p.Brand.BrandName
+            }).ToListAsync();
+
+            return Ok(new { success = true, products });
+        }
+
+
+
+
         private bool ProductExists(int id)
         {
             return _context.Products.Any(e => e.ProductId == id);
