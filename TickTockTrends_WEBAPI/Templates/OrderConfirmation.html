@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+
+        img {
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Hello {{UserName}},</h2>
+    <p>Thank you for your order!</p>
+    <p><strong>Order ID:</strong> {{OrderId}}</p>
+    <p><strong>Date:</strong> {{OrderDate}}</p>
+
+    <h3>Order Summary:</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{OrderItems}}
+        </tbody>
+    </table>
+
+    <p><strong>Total Amount:</strong> {{TotalAmount}}</p>
+    <p>We’ll notify you when your order ships.</p>
+</body>
+</html>
