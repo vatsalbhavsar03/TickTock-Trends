@@ -235,8 +235,8 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
         // GET /api/admin/orders/stats - Get statistics
-        [HttpGet("ordersstats")]
-        public async Task<IActionResult> GetOrderStats()
+        [HttpGet("AllStatistics")]
+        public async Task<IActionResult> AllStatistics()
         {
             var totalOrders = await _context.Orders.CountAsync();
             var totalRevenue = await _context.Orders.SumAsync(o => o.TotalAmount);
@@ -244,12 +244,20 @@ namespace TickTockTrends_WEBAPI.Controllers
                 .GroupBy(o => o.Status)
                 .Select(g => new { Status = g.Key, Count = g.Count() })
                 .ToListAsync();
+            var totalCustomers = await _context.Users.CountAsync(u => u.RoleId == 2);
+            var totalProducts = await _context.Products.CountAsync();
+            var totalCategories = await _context.Categories.CountAsync();
+            var totalBrands = await _context.Brands.CountAsync();
 
             return Ok(new
             {
                 TotalOrders = totalOrders,
                 TotalRevenue = totalRevenue,
-                OrdersByStatus = statusGroups
+                OrdersByStatus = statusGroups,
+                TotalCustomers = totalCustomers,
+                TotalProducts = totalProducts,
+                TotalCategories = totalCategories,
+                TotalBrands = totalBrands
             });
         }
 
