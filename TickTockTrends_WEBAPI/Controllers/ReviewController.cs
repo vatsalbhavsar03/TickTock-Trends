@@ -19,6 +19,35 @@ namespace TickTockTrends_WEBAPI.Controllers
             _configuration = configuration;
         }
 
+        //GET: api/Review
+        [HttpGet("GetAllReviews")]
+        public async Task<IActionResult> GetAllReviews()
+        {
+            var reviews = await _context.Reviews
+                .Include(r => r.User)
+                .Include(r => r.Product)
+                .OrderByDescending(r => r.ReviewDate)
+                .Select(r => new
+                {
+                    r.ReviewId,
+                    r.ProductId,
+                    ProductName = r.Product.Name,
+                    r.UserId,
+                    UserName = r.User.Name,
+                    r.Rating,
+                    r.Comment,
+                    r.ReviewDate
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                success = true,
+                data = reviews
+            });
+        }
+
+
         // POST: api/Review
         [HttpPost("AddReview")]
         public async Task<IActionResult> AddReview([FromBody] ReviewDto Dto)

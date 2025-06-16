@@ -20,6 +20,46 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
         // GET: api/Order/GetAllOrders
+        //[HttpGet("GetAllOrders")]
+        //public async Task<IActionResult> GetAllOrders()
+        //{
+        //    var orders = await _context.Orders
+        //        .Include(o => o.User)
+        //        .Include(o => o.OrderItems)
+        //        .Include(op => op.Payments)
+        //            .ThenInclude(oi => oi.Product)
+        //        .OrderByDescending(o => o.OrderDate)
+        //        .ToListAsync();
+
+        //    var result = orders.Select(order => new
+        //    {
+        //        OrderId = order.OrderId,
+        //        UserId = order.UserId,
+        //        UserName = order.User?.Name,
+        //        Email = order.User?.Email,
+        //        Phone = order.Phone,
+        //        Address = order.Address,
+        //        Status = order.Status,
+        //        TotalAmount = order.TotalAmount,
+        //        OrderDate = order.OrderDate,
+        //        TransactionId = order.Payments.FirstOrDefault()?.TransactionId,
+        //        Items = order.OrderItems.Select(oi => new
+        //        {
+        //            ProductId = oi.ProductId,
+        //            ProductName = oi.Product?.Name,
+        //            ImageUrl=oi.Product.ImageUrl,
+        //            Quantity = oi.Quantity,
+        //            Price = oi.Price,
+        //            Total = oi.Quantity * oi.Price
+        //        })
+        //    });
+
+        //    return Ok(new
+        //    {
+        //        success = true,
+        //        orders = result
+        //    });
+        //}
         [HttpGet("GetAllOrders")]
         public async Task<IActionResult> GetAllOrders()
         {
@@ -27,6 +67,7 @@ namespace TickTockTrends_WEBAPI.Controllers
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
+                .Include(o => o.Payments)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
 
@@ -41,11 +82,12 @@ namespace TickTockTrends_WEBAPI.Controllers
                 Status = order.Status,
                 TotalAmount = order.TotalAmount,
                 OrderDate = order.OrderDate,
+                TransactionId = order.Payments.FirstOrDefault()?.TransactionId,
                 Items = order.OrderItems.Select(oi => new
                 {
                     ProductId = oi.ProductId,
                     ProductName = oi.Product?.Name,
-                    ImageUrl=oi.Product.ImageUrl,
+                    ImageUrl = oi.Product?.ImageUrl,
                     Quantity = oi.Quantity,
                     Price = oi.Price,
                     Total = oi.Quantity * oi.Price
@@ -60,7 +102,63 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
 
+
         // POST: api/Order
+        //[HttpPost("CreateOrder")]
+        //public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto Dto)
+        //{
+        //    var cart = await _context.Carts
+        //        .Include(c => c.CartItems)
+        //        .ThenInclude(ci => ci.Product)
+        //        .FirstOrDefaultAsync(c => c.UserId == Dto.UserId);
+
+        //    if (cart == null || cart.CartItems.Count == 0)
+        //    {
+        //        return NotFound(new
+        //        {
+        //            success = false,
+        //            message = "Cart is empty"
+        //        });
+        //    }
+
+        //    var totalAmount = cart.CartItems.Sum(ci => ci.Product.Price * ci.Quantity);
+
+        //    var order = new Order
+        //    {
+        //        UserId = Dto.UserId,
+        //        TotalAmount = totalAmount,
+        //        Status=Status.Pending.ToString(),
+        //        OrderDate = DateTime.Now,
+        //        Phone = Dto.Phone,
+        //        Address = Dto.Address,
+        //        CreatedAt = DateTime.Now,
+        //        UpdatedAt = DateTime.Now
+        //    };
+
+        //    _context.Orders.Add(order);
+        //    await _context.SaveChangesAsync();
+
+        //    foreach (var item in cart.CartItems)
+        //    {
+        //        var orderItem = new OrderItem
+        //        {
+        //            OrderId = order.OrderId,
+        //            ProductId = item.ProductId,
+        //            Quantity = item.Quantity,
+        //            Price = item.Product.Price
+        //        };
+        //        _context.OrderItems.Add(orderItem);
+        //    }
+
+        //    _context.CartItems.RemoveRange(cart.CartItems);
+        //    await _context.SaveChangesAsync();
+        //    return Ok(new
+        //    {
+        //        success = true,
+        //        message = "Order created successfully",
+        //        orderId = order.OrderId
+        //    });
+        //}
         [HttpPost("CreateOrder")]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto Dto)
         {
@@ -84,7 +182,7 @@ namespace TickTockTrends_WEBAPI.Controllers
             {
                 UserId = Dto.UserId,
                 TotalAmount = totalAmount,
-                Status=Status.Pending.ToString(),
+                Status = Status.Pending.ToString(),
                 OrderDate = DateTime.Now,
                 Phone = Dto.Phone,
                 Address = Dto.Address,
@@ -97,18 +195,50 @@ namespace TickTockTrends_WEBAPI.Controllers
 
             foreach (var item in cart.CartItems)
             {
+                var product = item.Product;
+
+                // ✅ Check stock availability
+                if (product.Stock < item.Quantity)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = $"Insufficient stock for product: {product.Name}"
+                    });
+                }
+
+                // ✅ Deduct stock
+                product.Stock -= item.Quantity;
+
+                // ✅ Optional: Alert when stock ≤ 5
+                if (product.Stock <= 5)
+                {
+                    Console.WriteLine($"⚠️ Low stock alert: {product.Name} has only {product.Stock} items left.");
+                    // Optional: Save to Notification table if implemented
+                }
+
+                // ✅ Optional: Set stock = 0 if it goes negative by mistake
+                if (product.Stock < 0)
+                    product.Stock = 0;
+
+                // ✅ Create OrderItem
                 var orderItem = new OrderItem
                 {
                     OrderId = order.OrderId,
                     ProductId = item.ProductId,
                     Quantity = item.Quantity,
-                    Price = item.Product.Price
+                    Price = product.Price
                 };
+
                 _context.OrderItems.Add(orderItem);
             }
 
+            // ✅ Clear cart
             _context.CartItems.RemoveRange(cart.CartItems);
+
+            // ✅ Save all changes
             await _context.SaveChangesAsync();
+
             return Ok(new
             {
                 success = true,
@@ -116,6 +246,7 @@ namespace TickTockTrends_WEBAPI.Controllers
                 orderId = order.OrderId
             });
         }
+
 
         // GET /api/orders?userId=1 - List user's orders
         [HttpGet("GetUserOrder")]
@@ -214,25 +345,65 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
         // PUT /api/admin/orders/{id}/status - Update order status
-        [HttpPut("UpdateOrderStatus/{Orderid}")]
-        public async Task<IActionResult> UpdateOrderStatus(int Orderid, [FromBody] UpdateOrderStatusDto dto)
-        {
-            var order = await _context.Orders.FindAsync(Orderid);
-            if (order == null)
-            {
-                return NotFound(new
-                {
-                    success = false,
-                    message = "Order not found"
-                });
-            }
+        //[HttpPut("UpdateOrderStatus/{Orderid}")]
+        //public async Task<IActionResult> UpdateOrderStatus(int Orderid, [FromBody] UpdateOrderStatusDto dto)
+        //{
+        //    var order = await _context.Orders
+        //        .Include(p=>p.Payments)
+        //        .FirstOrDefaultAsync(o=>o.OrderId ==Orderid);
+        //    if (order == null)
+        //    {
+        //        return NotFound(new
+        //        {
+        //            success = false,
+        //            message = "Order not found"
+        //        });
+        //    }
 
-            order.Status = dto.Status;
+        //    order.Status = dto.Status;
+        //    order.UpdatedAt = DateTime.Now;
+
+        //    if (dto.Status == "Delivered" && order.Payment != null && order.Payment.PaymentMethod == "COD")
+        //    {
+        //        order.Payment.PaymentStatus = "Paid";
+        //        order.Payment.UpdatedAt = DateTime.UtcNow;
+        //    }
+
+
+        //    await _context.SaveChangesAsync();
+        //    return Ok("Order status updated.");
+        //}
+        [HttpPut("UpdateOrderStatus/{orderId}")]
+        public async Task<IActionResult> UpdateOrderStatus(int orderId, [FromBody] UpdateOrderStatusDto model)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Payments) // Include payments
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+            if (order == null)
+                return NotFound(new { success = false, message = "Order not found" });
+
+            order.Status = model.Status;
             order.UpdatedAt = DateTime.Now;
 
+            // ✅ If COD and Delivered, mark payment as Paid
+            var payment = order.Payments.FirstOrDefault();
+            if (payment != null &&
+                payment.PaymentMethod == "COD" &&
+                model.Status == "Delivered" &&
+                payment.PaymentStatus != "Paid")
+            {
+                payment.PaymentStatus = "Paid";
+                payment.UpdatedAt = DateTime.Now;
+            }
+
             await _context.SaveChangesAsync();
-            return Ok("Order status updated.");
+
+            return Ok(new { success = true, message = "Order status updated successfully." });
         }
+
+
+
 
         // GET /api/admin/orders/stats - Get statistics
         [HttpGet("AllStatistics")]

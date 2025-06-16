@@ -23,29 +23,52 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
         // GET: api/GetAllPayments
+        //[HttpGet("GetAllPayments")]
+        //public async Task<IActionResult> GetAllPayments()
+        //{
+        //    var payments = await _context.Payments
+        //        .OrderByDescending(p => p.PaymentDate)
+        //        .ToListAsync();
+
+        //    var result = payments.Select(payment => new PaymentDto
+        //    {
+        //        OrderId = payment.OrderId,
+        //        PaymentMethod = payment.PaymentMethod,
+        //        TransactionId = payment.TransactionId,
+        //        Amount = payment.Amount,
+        //        PaymentStatus = payment.PaymentStatus
+        //    });
+
+        //    return Ok(new
+        //    {
+        //        success = true,
+        //        message = "Payments fetched successfully.",
+        //        payments = result
+        //    });
+        //}
         [HttpGet("GetAllPayments")]
         public async Task<IActionResult> GetAllPayments()
         {
             var payments = await _context.Payments
+                .Include(p => p.Order)
+                .ThenInclude(o => o.User)
                 .OrderByDescending(p => p.PaymentDate)
+                .Select(p => new
+                {
+                    PaymentId = p.PaymentId,
+                    OrderId = p.OrderId,
+                    UserName = p.Order.User.Name,
+                    PaymentMethod = p.PaymentMethod,
+                    TransactionId = p.TransactionId,
+                    PaymentStatus = p.PaymentStatus,
+                    Amount = p.Order.TotalAmount,
+                    PaymentDate = p.PaymentDate
+                })
                 .ToListAsync();
 
-            var result = payments.Select(payment => new PaymentDto
-            {
-                OrderId = payment.OrderId,
-                PaymentMethod = payment.PaymentMethod,
-                TransactionId = payment.TransactionId,
-                Amount = payment.Amount,
-                PaymentStatus = payment.PaymentStatus
-            });
-
-            return Ok(new
-            {
-                success = true,
-                message = "Payments fetched successfully.",
-                payments = result
-            });
+            return Ok(new { success = true, payments });
         }
+
 
 
         // GET: api/Payment/GetPaymentById/{Orderid}
