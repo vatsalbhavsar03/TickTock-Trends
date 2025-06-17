@@ -188,7 +188,6 @@ namespace TickTockTrends_WEBAPI.Controllers
         {
             try
             {
-                // Check if image is uploaded
                 if (productDto.ImageUrl == null || productDto.ImageUrl.Length == 0)
                     return BadRequest(new 
                     { 
@@ -196,14 +195,13 @@ namespace TickTockTrends_WEBAPI.Controllers
                         message = "Image file is required." 
                     });
 
-                //  uploaded image
                 var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productDto.ImageUrl.FileName);
                 var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
 
-                // Create the directory if it doesn't exist
+               
                 Directory.CreateDirectory(Path.GetDirectoryName(imagePath)!);
 
-                // Save the image to the server
+              
                 using (var stream = new FileStream(imagePath, FileMode.Create))
                 {
                     await productDto.ImageUrl.CopyToAsync(stream);

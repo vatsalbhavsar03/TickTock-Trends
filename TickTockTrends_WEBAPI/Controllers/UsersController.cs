@@ -129,56 +129,7 @@ namespace TickTockTrends_WEBAPI.Controllers
         }
 
 
-        // POST: api/Users/Register
-        //[HttpPost("Register")]
-        //public async Task<ActionResult> Register([FromBody] RegisterUserDTO registerUserDto)
-        //{
-        //    try
-        //    {
-        //        if (_context.Users.Any(u => u.Email == registerUserDto.Email))
-        //        {
-        //            throw new Exception("Email Already Exists.");
-        //        }
-
-        //        // Convert UTC to Indian Standard Time (IST)
-        //        TimeZoneInfo indianTimeZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
-        //        DateTime indianTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, indianTimeZone);
-
-        //        var user = new User
-        //        {
-        //            Name = registerUserDto.Name,
-        //            Email = registerUserDto.Email,
-        //            Password = BCrypt.Net.BCrypt.HashPassword(registerUserDto.Password),
-        //            PhoneNo = registerUserDto.PhoneNo,
-        //            RoleId = 2, 
-        //            CreatedAt = indianTime,
-        //            UpdatedAt = indianTime
-        //        };
-
-        //        _context.Users.Add(user);
-        //        await _context.SaveChangesAsync();
-
-        //        return Ok(new
-        //        {
-        //            success = true,
-        //            message = "Successfully registered",
-        //            user = new
-        //            {
-        //                user.UserId,
-        //                user.RoleId,  
-        //                user.Name,
-        //                user.Email,
-        //                user.PhoneNo,
-        //                user.CreatedAt,
-        //                user.UpdatedAt
-        //            }
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new { success = false, message = ex.Message });
-        //    }
-        //}
+       
         [HttpPost("Register")]
         public async Task<ActionResult> Register([FromBody] RegisterUserDTO registerUserDto)
         {
@@ -206,7 +157,6 @@ namespace TickTockTrends_WEBAPI.Controllers
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
-                // Generate JWT token using your method
                 var token = GenerateJwtToken(user);
 
                 return Ok(new
@@ -240,7 +190,6 @@ namespace TickTockTrends_WEBAPI.Controllers
         {
             var otp = new Random().Next(100000, 999999).ToString();
 
-            // Store OTP and email in session
             HttpContext.Session.SetString("otp", otp);
             HttpContext.Session.SetString("otpEmail", sendOtpDto.Email);
 
@@ -298,17 +247,14 @@ namespace TickTockTrends_WEBAPI.Controllers
         [HttpPost("VerifyOTP")]
         public async Task<ActionResult> VerifyOtp([FromBody] VerifyOtpDto verifyOtpDto)
         {
-            // Retrieve OTP and email from session
             var sessionOtp = HttpContext.Session.GetString("otp");
             var sessionEmail = HttpContext.Session.GetString("otpEmail");
 
-            // Check if OTP or email session is null, or if they don't match
             if (sessionOtp == null || sessionEmail == null || sessionOtp != verifyOtpDto.Otp || sessionEmail != verifyOtpDto.Email)
             {
                 return BadRequest(new { success = false, message = "Invalid Or Expired OTP." });
             }
 
-            // Clear OTP and email from session after verification
             HttpContext.Session.Remove("otp");
             HttpContext.Session.Remove("otpEmail");
 
@@ -378,8 +324,7 @@ namespace TickTockTrends_WEBAPI.Controllers
         {
             var key = Convert.FromBase64String(_configuration["Jwt:Key"]);
 
-            // Make sure Role is not null
-            string roleName = user.Role?.RoleName ?? "User"; // fallback if Role is null
+            string roleName = user.Role?.RoleName ?? "User"; 
 
             var claims = new[]
             {
@@ -501,46 +446,7 @@ namespace TickTockTrends_WEBAPI.Controllers
             return NoContent();
         }
 
-        //[HttpGet("profile")]
-        //[Authorize] // Requires authentication
-        //public async Task<ActionResult> GetProfile()
-        //{
-        //    try
-        //    {
-        //        // Extract user ID from JWT token
-        //        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-
-        //        // Fetch user from database
-        //        var user = await _context.Users
-        //            .Where(u => u.UserId == userId)
-        //            .Select(u => new
-        //            {
-        //                u.UserId,
-        //                u.Name,
-        //                u.Email,
-        //                u.PhoneNo,
-        //                u.RoleId,
-        //                u.CreatedAt,
-        //                u.UpdatedAt
-        //            })
-        //            .FirstOrDefaultAsync();
-
-        //        if (user == null)
-        //        {
-        //            return NotFound(new { success = false, message = "User not found." });
-        //        }
-
-        //        return Ok(new
-        //        {
-        //            success = true,
-        //            user
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new { success = false, message = ex.Message });
-        //    }
-        //}
+        
 
         [HttpGet("profile")]
         [Authorize]
@@ -602,12 +508,10 @@ namespace TickTockTrends_WEBAPI.Controllers
                     return NotFound(new { success = false, message = "User not found." });
                 }
 
-                // Update fields
                 user.Name = updateDto.Name;
                 user.PhoneNo = updateDto.PhoneNo;
                 user.Email = updateDto.Email;
 
-                // Update timestamp
                 TimeZoneInfo indianTimeZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
                 user.UpdatedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, indianTimeZone);
 

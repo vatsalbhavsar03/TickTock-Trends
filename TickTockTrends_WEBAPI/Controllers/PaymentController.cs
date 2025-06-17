@@ -22,30 +22,7 @@ namespace TickTockTrends_WEBAPI.Controllers
             _configuration = configuration;
         }
 
-        // GET: api/GetAllPayments
-        //[HttpGet("GetAllPayments")]
-        //public async Task<IActionResult> GetAllPayments()
-        //{
-        //    var payments = await _context.Payments
-        //        .OrderByDescending(p => p.PaymentDate)
-        //        .ToListAsync();
-
-        //    var result = payments.Select(payment => new PaymentDto
-        //    {
-        //        OrderId = payment.OrderId,
-        //        PaymentMethod = payment.PaymentMethod,
-        //        TransactionId = payment.TransactionId,
-        //        Amount = payment.Amount,
-        //        PaymentStatus = payment.PaymentStatus
-        //    });
-
-        //    return Ok(new
-        //    {
-        //        success = true,
-        //        message = "Payments fetched successfully.",
-        //        payments = result
-        //    });
-        //}
+       
         [HttpGet("GetAllPayments")]
         public async Task<IActionResult> GetAllPayments()
         {
@@ -101,45 +78,7 @@ namespace TickTockTrends_WEBAPI.Controllers
             });
         }
 
-        // POST: api/Payment/CreatePayment
-        //[HttpPost("CreatePayment")]
-        //public async Task<IActionResult> CreatePayment([FromBody] PaymentDto dto)
-        //{
-        //    if (dto == null || dto.OrderId <= 0 || string.IsNullOrEmpty(dto.PaymentMethod)
-        //        || string.IsNullOrEmpty(dto.TransactionId) || dto.Amount <= 0
-        //        || string.IsNullOrEmpty(dto.PaymentStatus))
-        //    {
-        //        return BadRequest(new { success = false, message = "Invalid payment data." });
-        //    }
-
-        //    var order = await _context.Orders.FindAsync(dto.OrderId);
-        //    if (order == null)
-        //    {
-        //        return NotFound(new { success = false, message = "Order not found." });
-        //    }
-
-        //    var payment = new Payment
-        //    {
-        //        OrderId = dto.OrderId,
-        //        PaymentMethod = dto.PaymentMethod,
-        //        TransactionId = dto.TransactionId,
-        //        Amount = dto.Amount,
-        //        PaymentStatus = dto.PaymentStatus,
-        //        PaymentDate = DateTime.UtcNow,
-        //        CreatedAt = DateTime.UtcNow,
-        //        UpdatedAt = DateTime.UtcNow
-        //    };
-
-        //    _context.Payments.Add(payment);
-        //    await _context.SaveChangesAsync();
-
-        //    return Ok(new
-        //    {
-        //        success = true,
-        //        message = "Payment created successfully.",
-        //        paymentId = payment.PaymentId
-        //    });
-        //}
+       
         [HttpPost("CreatePayment")]
         public async Task<IActionResult> CreatePayment([FromBody] PaymentDto dto)
         {
@@ -171,7 +110,6 @@ namespace TickTockTrends_WEBAPI.Controllers
             _context.Payments.Add(payment);
             await _context.SaveChangesAsync();
 
-            // ✅ Load full order with user and items
             var fullOrder = await _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
